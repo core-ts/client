@@ -16,8 +16,6 @@ export interface Metadata {
   name: string;
   attributes: any;
   source?: string;
-  model?: any;
-  schema?: any;
 }
 
 export interface Attribute {
@@ -29,9 +27,9 @@ export interface Attribute {
   typeOf?: Metadata;
 }
 
-export interface MetaModel {
+export class MetaModel {
   model: Metadata;
-  attributeName?: string;
+  attributeName: string;
   primaryKeys: Attribute[];
   dateFields: string[];
   objectFields: MetaModel[];
@@ -43,6 +41,9 @@ class DefaultMetaModelBuilder {
     if (model && !model.source) {
       model.source = model.name;
     }
+    const metadata: MetaModel = new MetaModel();
+    metadata.model = model;
+
     const primaryKeys: Attribute[] = new Array<Attribute>();
     const dateFields = new Array<string>();
     const objectFields = new Array<MetaModel>();
@@ -84,13 +85,10 @@ class DefaultMetaModelBuilder {
         }
       }
     }
-    const metadata: MetaModel = {
-      model,
-      primaryKeys,
-      dateFields,
-      objectFields,
-      arrayFields
-    };
+    metadata.primaryKeys = primaryKeys;
+    metadata.dateFields = dateFields;
+    metadata.objectFields = objectFields;
+    metadata.arrayFields = arrayFields;
     return metadata;
   }
 }
@@ -113,11 +111,6 @@ export class MetadataUtil {
     return primaryKeys;
   }
 
-  static buildMetaModel(model: Metadata): MetaModel {
-    const meta = this._builder.build(model);
-    return meta;
-  }
-
   static getMetaModel(model: Metadata): MetaModel {
     let meta: MetaModel = MetadataUtil._cache[model.name];
     if (!meta) {
@@ -128,7 +121,7 @@ export class MetadataUtil {
   }
 
   // Use parse datetime string field to datetime date field.
-  static json(obj: any, meta: MetaModel): void {
+  static json(obj: any, meta: MetaModel): any {
     MetadataUtil.jsonToDate(obj, meta.dateFields);
     if (meta.objectFields) {
       for (const objectField of meta.objectFields) {
@@ -142,8 +135,8 @@ export class MetadataUtil {
         if (obj[arrayField.attributeName]) {
           const arr = obj[arrayField.attributeName];
           if (Array.isArray(arr)) {
-            for (const a of arr) {
-              MetadataUtil.json(a, arrayField);
+            for (let i = 0; i < arr.length; i++) {
+              MetadataUtil.json(arr[i], arrayField);
             }
           }
         }
