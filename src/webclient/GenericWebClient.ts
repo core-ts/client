@@ -33,8 +33,17 @@ export class GenericWebClient<T, ID, R> extends ViewWebClient<T, ID> {
         url += '/' + obj[name];
       }
     }
-    const res = await this.http.put<R>(url, obj);
-    return this.formatResultInfo(res);
+    try {
+      const res = await this.http.put<R>(url, obj);
+      return this.formatResultInfo(res);
+    } catch (err) {
+      if (err && err.status === 404) {
+        const x: any = 0;
+        return x;
+      } else {
+        throw err;
+      }
+    }
   }
 
   async patch(obj: T): Promise<R> {
@@ -45,8 +54,17 @@ export class GenericWebClient<T, ID, R> extends ViewWebClient<T, ID> {
         url += '/' + obj[name];
       }
     }
-    const res = await this.http.patch<R>(url, obj);
-    return this.formatResultInfo(res);
+    try {
+      const res = await this.http.patch<R>(url, obj);
+      return this.formatResultInfo(res);
+    } catch (err) {
+      if (err && err.status === 404) {
+        const x: any = 0;
+        return x;
+      } else {
+        throw err;
+      }
+    }
   }
 
   async delete(id: ID): Promise<number> {
