@@ -7,17 +7,17 @@ export function optimizeSearchModel<S extends SearchModel>(s: S): S {
   const o: any = {};
   for (const key of keys) {
     const p = s[key];
-    if (key === 'pageIndex') {
+    if (key === 'page') {
       if (p && p >= 1) {
         o[key] = p;
       } else {
         o[key] = 1;
       }
-    } else if (key === 'pageSize') {
+    } else if (key === 'limit') {
       if (p && p >= 1) {
         o[key] = p;
       }
-    } else if (key === 'initPageSize') {
+    } else if (key === 'firstLimit') {
       if (p && p >= 1) {
         o[key] = p;
       }
@@ -27,9 +27,9 @@ export function optimizeSearchModel<S extends SearchModel>(s: S): S {
       }
     }
   }
-  o.includeTotal = true;
-  if (o.pageSize != null && o.initPageSize === o.pageSize) {
-    delete o['initPageSize'];
+  // o.includeTotal = true;
+  if (o.limit != null && o.firstLimit === o.limit) {
+    delete o['firstLimit'];
   }
   for (const key of Object.keys(o)) {
     if (Array.isArray(o[key]) && o[key].length === 0) {
@@ -52,9 +52,9 @@ export async function fromCsv<T>(m: SearchModel, csv: string): Promise<SearchRes
     arr.push(obj);
   }
   const x: SearchResult<T> = {
-    itemTotal: parseFloat(items[0][0]),
+    total: parseFloat(items[0][0]),
     results: arr,
-    lastPage: (items[0][0] === '1')
+    last: (items[0][0] === '1')
   };
   return x;
 }

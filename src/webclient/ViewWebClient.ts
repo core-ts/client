@@ -1,6 +1,6 @@
 import {HttpRequest} from '../http/HttpRequest';
-import {Metadata, MetaModel, build, json} from './json';
-;
+import {build, json, Metadata, MetaModel} from './json';
+
 export class ViewWebClient<T, ID> {
   constructor(protected serviceUrl: string, protected http: HttpRequest, protected model: Metadata) {
     this.metadata = this.metadata.bind(this);
@@ -65,7 +65,7 @@ export class ViewWebClient<T, ID> {
     return list;
   }
 
-  protected formatObject(obj: T): any {
+  protected formatObject(obj: any): any {
     json(obj, this._metamodel);
     return obj;
   }

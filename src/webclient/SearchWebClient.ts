@@ -1,8 +1,8 @@
 import {HttpRequest} from '../http/HttpRequest';
 import {SearchModel} from '../model/SearchModel';
 import {SearchResult} from '../model/SearchResult';
-import {optimizeSearchModel, fromCsv} from '../util/search';
 import {param} from '../util/param';
+import {fromCsv, optimizeSearchModel} from '../util/search';
 import {build, json, Metadata, MetaModel} from './json';
 
 export class SearchWebClient<T, S extends SearchModel> {

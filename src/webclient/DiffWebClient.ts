@@ -1,5 +1,5 @@
 import {HttpRequest} from '../http/HttpRequest';
-import {keys, build, json, Metadata, MetaModel} from './json';
+import {build, json, keys, Metadata, MetaModel} from './json';
 
 export interface DiffModel<T, ID> {
   id?: ID;

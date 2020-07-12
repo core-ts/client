@@ -23,8 +23,8 @@ export interface Metadata {
 }
 
 export interface Attribute {
-  name: string;
-  field: string;
+  name?: string;
+  field?: string;
   type: Type;
   key?: boolean;
   ignored?: boolean;
@@ -48,8 +48,8 @@ export function build(model: Metadata): MetaModel {
   const dateFields = new Array<string>();
   const objectFields = new Array<MetaModel>();
   const arrayFields = new Array<MetaModel>();
-  const keys: string[] = Object.keys(model.attributes);
-  for (const key of keys) {
+  const ids: string[] = Object.keys(model.attributes);
+  for (const key of ids) {
     const attr: Attribute = model.attributes[key];
     if (attr) {
       attr.name = key;
@@ -102,9 +102,9 @@ export function build(model: Metadata): MetaModel {
 }
 
 export function keys(model: Metadata): string[] {
-  const keys: string[] = Object.keys(model.attributes);
+  const ids: string[] = Object.keys(model.attributes);
   const primaryKeys: string[] = [];
-  for (const key of keys) {
+  for (const key of ids) {
     const attr: Attribute = model.attributes[key];
     if (attr && attr.ignored !== true && attr.key === true && attr.name && attr.name.length > 0) {
       primaryKeys.push(attr.name);

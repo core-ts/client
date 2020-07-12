@@ -1,10 +1,6 @@
 export interface SearchModel {
-  keyword: string;
-  sortField: string;
-  sortType: string;
-  pageIndex: number;
-  pageSize: number;
-  initPageSize: number;
-  fields: string[];
-  excluding: any;
+  page: number;
+  limit: number;
+  firstLimit?: number;
+  fields?: string[];
 }

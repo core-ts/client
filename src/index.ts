@@ -1,8 +1,9 @@
-export {HttpRequest, HttpOptionsService} from './http/HttpRequest';
+export * from './http/HttpRequest';
 export * from './util/csv';
 export * from './util/search';
 export * from './util/param';
 
+export * from './webclient/json';
 export * from './webclient/SearchWebClient';
 export * from './webclient/ViewWebClient';
 export * from './webclient/GenericWebClient';

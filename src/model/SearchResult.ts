@@ -1,5 +1,5 @@
 export interface SearchResult<T> {
-  itemTotal: number;
+  total?: number;
   results: T[];
-  lastPage: boolean;
+  last?: boolean;
 }
