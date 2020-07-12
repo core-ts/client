@@ -4,12 +4,12 @@ import {Status} from './ApprWebClient';
 import {DiffApprWebClient} from './DiffApprWebClient';
 import {DiffModel} from './DiffWebClient';
 import {GenericSearchWebClient} from './GenericSearchWebClient';
-import {Metadata} from './MetadataUtil';
+import {Metadata} from './json';
 
 export class GenericSearchDiffApprWebClient<T, ID, R, S extends SearchModel> extends GenericSearchWebClient<T, ID, R, S> {
   constructor(serviceUrl: string, http: HttpRequest, model: Metadata) {
     super(serviceUrl, http, model);
-    this.diffWebClient = new DiffApprWebClient(serviceUrl, http, null, this.ids(), this._metamodel);
+    this.diffWebClient = new DiffApprWebClient(serviceUrl, http, null, this.keys(), this._metamodel);
     this.diff = this.diff.bind(this);
     this.approve = this.approve.bind(this);
     this.reject = this.reject.bind(this);

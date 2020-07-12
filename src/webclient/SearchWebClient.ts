@@ -1,9 +1,9 @@
 import {HttpRequest} from '../http/HttpRequest';
 import {SearchModel} from '../model/SearchModel';
 import {SearchResult} from '../model/SearchResult';
-import {SearchUtil} from '../util/SearchUtil';
-import {WebParameterUtil} from '../util/WebParameterUtil';
-import {Metadata, MetadataUtil, MetaModel} from './MetadataUtil';
+import {optimizeSearchModel, fromCsv} from '../util/search';
+import {param} from '../util/param';
+import {build, json, Metadata, MetaModel} from './json';
 
 export class SearchWebClient<T, S extends SearchModel> {
   constructor(protected serviceUrl: string, protected http: HttpRequest, model: Metadata, metaModel?: MetaModel) {
@@ -14,7 +14,7 @@ export class SearchWebClient<T, S extends SearchModel> {
     if (metaModel) {
       this._metamodel = metaModel;
     } else {
-      const metaModel2 = MetadataUtil.buildMetaModel(model);
+      const metaModel2 = build(model);
       this._metamodel = metaModel2;
     }
   }
@@ -27,31 +27,31 @@ export class SearchWebClient<T, S extends SearchModel> {
   async search(s: S): Promise<SearchResult<T>> {
     this.formatSearch(s);
     if (this._metamodel && s.fields && s.fields.length > 0) {
-      if (this._metamodel.primaryKeys && this._metamodel.primaryKeys.length > 0) {
-        for (const id of this._metamodel.primaryKeys) {
-          if (s.fields.indexOf(id.name) < 0) {
-            s.fields.push(id.name);
+      if (this._metamodel.keys && this._metamodel.keys.length > 0) {
+        for (const key of this._metamodel.keys) {
+          if (s.fields.indexOf(key) < 0) {
+            s.fields.push(key);
           }
         }
       }
     }
-    const s2 = SearchUtil.optimizeSearchModel(s);
+    const s2 = optimizeSearchModel(s);
     const keys2 = Object.keys(s2);
     if (keys2.length === 0) {
       const searchUrl = this.serviceUrl + '/search';
       const res: string|SearchResult<T> = await this.http.get(searchUrl);
       if (typeof res === 'string') {
-        return SearchUtil.fromCsv<T>(s, res);
+        return fromCsv<T>(s, res);
       } else {
         return this.buildSearchResult(res);
       }
     } else {
-      const params = WebParameterUtil.param(s2);
+      const params = param(s2);
       const searchUrl = this.serviceUrl + '/search' + '?' + params;
       if (searchUrl.length <= 1) {
         const res: string|SearchResult<T> = await this.http.get(searchUrl);
         if (typeof res === 'string') {
-          return SearchUtil.fromCsv<T>(s, res);
+          return fromCsv<T>(s, res);
         } else {
           return this.buildSearchResult(res);
         }
@@ -59,7 +59,7 @@ export class SearchWebClient<T, S extends SearchModel> {
         const postSearchUrl = this.serviceUrl + '/search';
         const res: string|SearchResult<T> = await this.http.post<string|SearchResult<T>>(postSearchUrl, s2);
         if (typeof res === 'string') {
-          return SearchUtil.fromCsv<T>(s, res);
+          return fromCsv<T>(s, res);
         } else {
           return this.buildSearchResult(res);
         }
@@ -80,7 +80,7 @@ export class SearchWebClient<T, S extends SearchModel> {
     }
     if (this._metamodel) {
       for (const obj of list) {
-        MetadataUtil.json(obj, this._metamodel);
+        json(obj, this._metamodel);
       }
     }
     return list;

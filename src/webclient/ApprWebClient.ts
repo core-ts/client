@@ -1,5 +1,5 @@
 import {HttpRequest} from '../http/HttpRequest';
-import {Metadata, MetadataUtil} from './MetadataUtil';
+import {Metadata, keys} from './json';
 
 export enum Status {
   DataNotFound = 0,
@@ -9,21 +9,22 @@ export enum Status {
 }
 
 export class ApprWebClient<ID> {
-  constructor(protected serviceUrl: string, protected http: HttpRequest, protected model: Metadata, ids?: string[]) {
+  constructor(protected serviceUrl: string, protected http: HttpRequest, protected model: Metadata, _keys?: string[]) {
     this.approve = this.approve.bind(this);
     this.reject = this.reject.bind(this);
-    this._ids = (ids ? ids : MetadataUtil.ids(model));
+    this.keys = this.keys.bind(this);
+    this._keys = (_keys ? _keys : keys(model));
   }
-  protected _ids: string[];
-  ids(): string[] {
-    return this._ids;
+  protected _keys: string[];
+  keys(): string[] {
+    return this._keys;
   }
 
   async approve(id: ID): Promise<Status> {
     let url = this.serviceUrl + '/' + id + '/approve';
-    if (this._ids && this._ids.length > 0 && typeof id === 'object') {
+    if (this._keys && this._keys.length > 0 && typeof id === 'object') {
       url = this.serviceUrl;
-      for (const name of this._ids) {
+      for (const name of this._keys) {
         url = url + '/' + id[name];
       }
       url = url + '/approve';
@@ -35,15 +36,15 @@ export class ApprWebClient<ID> {
       if (err && err.status === 404) {
         return Status.DataNotFound;
       } else {
-        throw err;
+        return Status.Error;
       }
     }
   }
   async reject(id: ID): Promise<Status> {
     let url = this.serviceUrl + '/' + id + '/reject';
-    if (this._ids && this._ids.length > 0 && typeof id === 'object') {
+    if (this._keys && this._keys.length > 0 && typeof id === 'object') {
       url = this.serviceUrl;
-      for (const name of this._ids) {
+      for (const name of this._keys) {
         url = url + '/' + id[name];
       }
       url = url + '/reject';
@@ -55,7 +56,7 @@ export class ApprWebClient<ID> {
       if (err && err.status === 404) {
         return Status.DataNotFound;
       } else {
-        throw err;
+        return Status.Error;
       }
     }
   }

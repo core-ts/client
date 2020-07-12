@@ -1,5 +1,5 @@
 import {HttpRequest} from '../http/HttpRequest';
-import {Metadata, MetadataUtil} from './MetadataUtil';
+import {Metadata, json} from './json';
 import {ViewWebClient} from './ViewWebClient';
 
 export class GenericWebClient<T, ID, R> extends ViewWebClient<T, ID> {
@@ -14,22 +14,22 @@ export class GenericWebClient<T, ID, R> extends ViewWebClient<T, ID> {
 
   protected formatResultInfo(result: any): any {
     if (result && result.status === 1 && result.value && typeof result.value === 'object') {
-      result.value = MetadataUtil.json(result.value, this._metamodel);
+      result.value = json(result.value, this._metamodel);
     }
     return result;
   }
 
   async insert(obj: T): Promise<R> {
-    MetadataUtil.json(obj, this._metamodel);
+    json(obj, this._metamodel);
     const res = await this.http.post<R>(this.serviceUrl, obj);
     return this.formatResultInfo(res);
   }
 
   async update(obj: T): Promise<R> {
     let url = this.serviceUrl;
-    const ids = this.ids();
-    if (ids && ids.length > 0) {
-      for (const name of ids) {
+    const keys = this.keys();
+    if (keys && keys.length > 0) {
+      for (const name of keys) {
         url += '/' + obj[name];
       }
     }
@@ -37,29 +37,38 @@ export class GenericWebClient<T, ID, R> extends ViewWebClient<T, ID> {
     return this.formatResultInfo(res);
   }
 
-  async patch(obj: T, body: object): Promise<R> {
+  async patch(obj: T): Promise<R> {
     let url = this.serviceUrl;
-    const ids = this.ids();
-    if (ids && ids.length > 0) {
-      for (const name of ids) {
+    const keys = this.keys();
+    if (keys && keys.length > 0) {
+      for (const name of keys) {
         url += '/' + obj[name];
       }
     }
-    const res = await this.http.patch<R>(url, body);
+    const res = await this.http.patch<R>(url, obj);
     return this.formatResultInfo(res);
   }
 
-  delete(id: ID): Promise<number> {
+  async delete(id: ID): Promise<number> {
     let url = this.serviceUrl + '/' + id;
     if (typeof id === 'object' && this.model) {
-      const ids = this.ids();
-      if (ids && ids.length > 0) {
+      const keys = this.keys();
+      if (keys && keys.length > 0) {
         url = this.serviceUrl;
-        for (const key of ids) {
+        for (const key of keys) {
           url = url + '/' + id[key];
         }
       }
     }
-    return this.http.delete<number>(url);
+    try {
+      const res = await this.http.delete<number>(url);
+      return res;
+    } catch (err) {
+      if (err && err.status === 404) {
+        return null;
+      } else {
+        throw err;
+      }
+    }
   }
 }

@@ -2,7 +2,7 @@ import {HttpRequest} from '../http/HttpRequest';
 import {SearchModel} from '../model/SearchModel';
 import {SearchResult} from '../model/SearchResult';
 import {GenericWebClient} from './GenericWebClient';
-import {Metadata} from './MetadataUtil';
+import {Metadata} from './json';
 import {SearchWebClient} from './SearchWebClient';
 
 export class GenericSearchWebClient<T, ID, R, S extends SearchModel> extends GenericWebClient<T, ID, R> {

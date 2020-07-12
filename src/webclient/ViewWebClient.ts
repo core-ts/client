@@ -1,30 +1,30 @@
 import {HttpRequest} from '../http/HttpRequest';
-import {Metadata, MetadataUtil, MetaModel} from './MetadataUtil';
-
+import {Metadata, MetaModel, build, json} from './json';
+;
 export class ViewWebClient<T, ID> {
   constructor(protected serviceUrl: string, protected http: HttpRequest, protected model: Metadata) {
     this.metadata = this.metadata.bind(this);
-    this.ids = this.ids.bind(this);
+    this.keys = this.keys.bind(this);
     this.all = this.all.bind(this);
     this.load = this.load.bind(this);
     this.formatObject = this.formatObject.bind(this);
     this.formatObjects = this.formatObjects.bind(this);
-    const metaModel = MetadataUtil.buildMetaModel(this.model);
-    const keys = metaModel.primaryKeys;
+    const metaModel = build(this.model);
+    const keys = metaModel.keys;
     if (keys) {
       for (const key of keys) {
-        if (key.name && key.name.length > 0) {
-          this._ids.push(key.name);
+        if (key && key.length > 0) {
+          this._keys.push(key);
         }
       }
     }
     this._metamodel = metaModel;
   }
-  private _ids: string[] = [];
+  private _keys: string[] = [];
   protected _metamodel: MetaModel;
 
-  ids(): string[] {
-    return this._ids;
+  keys(): string[] {
+    return this._keys;
   }
   metadata(): Metadata {
     return this.model;
@@ -37,14 +37,14 @@ export class ViewWebClient<T, ID> {
 
   async load(id: ID): Promise<T> {
     let url = this.serviceUrl + '/' + id;
-    if (this._ids && this._ids.length > 0 && typeof id === 'object') {
+    if (this._keys && this._keys.length > 0 && typeof id === 'object') {
       url = this.serviceUrl;
-      for (const name of this._ids) {
+      for (const name of this._keys) {
         url = url + '/' + id[name];
       }
     }
     try {
-      const res = await this.http.get(url);
+      const res = await this.http.get<T>(url);
       return this.formatObject(res);
     } catch (err) {
       if (err && err.status === 404) {
@@ -55,18 +55,18 @@ export class ViewWebClient<T, ID> {
     }
   }
 
-  protected formatObjects(list: any[]): any[] {
+  protected formatObjects(list: T[]): T[] {
     if (!list || list.length === 0) {
       return list;
     }
     for (const obj of list) {
-      MetadataUtil.json(obj, this._metamodel);
+      json(obj, this._metamodel);
     }
     return list;
   }
 
-  protected formatObject(obj): any {
-    MetadataUtil.json(obj, this._metamodel);
+  protected formatObject(obj: T): any {
+    json(obj, this._metamodel);
     return obj;
   }
 }

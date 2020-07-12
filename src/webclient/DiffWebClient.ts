@@ -1,25 +1,25 @@
 import {HttpRequest} from '../http/HttpRequest';
-import {Metadata, MetadataUtil, MetaModel} from './MetadataUtil';
+import {keys, build, json, Metadata, MetaModel} from './json';
 
 export interface DiffModel<T, ID> {
   id?: ID;
-  oldValue?: T;
-  newValue: T;
+  origin?: T;
+  value: T;
 }
 
 export class DiffWebClient<T, ID>  {
-  constructor(protected serviceUrl: string, protected http: HttpRequest, protected metadata: Metadata, ids?: string[], metaModel?: MetaModel) {
+  constructor(protected serviceUrl: string, protected http: HttpRequest, protected metadata: Metadata, _keys?: string[], metaModel?: MetaModel) {
     this.diff = this.diff.bind(this);
-    this._ids = (ids ? ids : MetadataUtil.ids(metadata));
+    this._ids = (_keys ? _keys : keys(metadata));
     if (metaModel) {
       this._metaModel = metaModel;
     } else {
-      this._metaModel = MetadataUtil.buildMetaModel(metadata);
+      this._metaModel = build(metadata);
     }
   }
   protected _ids: string[];
   private _metaModel: MetaModel;
-  ids(): string[] {
+  keys(): string[] {
     return this._ids;
   }
   async diff(id: ID): Promise<DiffModel<T, ID>> {
@@ -36,23 +36,23 @@ export class DiffWebClient<T, ID>  {
       if (!res) {
         return null;
       }
-      if (!res.newValue) {
-        res.newValue = {};
+      if (!res.value) {
+        res.value = {};
       }
-      if (typeof res.newValue === 'string') {
-          res.newValue = JSON.parse(res.newValue);
+      if (typeof res.value === 'string') {
+          res.value = JSON.parse(res.value);
       }
-      if (!res.oldValue) {
-        res.oldValue = {};
+      if (!res.origin) {
+        res.origin = {};
       }
-      if (typeof res.oldValue === 'string') {
-        res.oldValue = JSON.parse(res.oldValue);
+      if (typeof res.origin === 'string') {
+        res.origin = JSON.parse(res.origin);
       }
-      if (res.newValue) {
-        MetadataUtil.json(res.newValue, this._metaModel);
+      if (res.value) {
+        json(res.value, this._metaModel);
       }
-      if (res.oldValue) {
-        MetadataUtil.json(res.oldValue, this._metaModel);
+      if (res.origin) {
+        json(res.origin, this._metaModel);
       }
       return res;
     } catch (err) {

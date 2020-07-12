@@ -1,7 +1,7 @@
 import {HttpRequest} from '../http/HttpRequest';
 import {SearchModel} from '../model/SearchModel';
 import {SearchResult} from '../model/SearchResult';
-import {Metadata} from './MetadataUtil';
+import {Metadata} from './json';
 import {SearchWebClient} from './SearchWebClient';
 import {ViewWebClient} from './ViewWebClient';
 

@@ -1,7 +1,7 @@
 export {HttpRequest, HttpOptionsService} from './http/HttpRequest';
-export * from './util/CsvUtil';
-export * from './util/SearchUtil';
-export * from './util/WebParameterUtil';
+export * from './util/csv';
+export * from './util/search';
+export * from './util/param';
 
 export * from './webclient/SearchWebClient';
 export * from './webclient/ViewWebClient';
