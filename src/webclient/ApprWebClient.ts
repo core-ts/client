@@ -1,5 +1,5 @@
 import {HttpRequest} from '../http/HttpRequest';
-import {Metadata, keys} from './json';
+import {keys, Metadata} from './json';
 
 export enum Status {
   DataNotFound = 0,

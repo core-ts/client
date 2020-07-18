@@ -1,5 +1,5 @@
 import {HttpRequest} from '../http/HttpRequest';
-import {Metadata, json} from './json';
+import {json, Metadata} from './json';
 import {ViewWebClient} from './ViewWebClient';
 
 export class GenericWebClient<T, ID, R> extends ViewWebClient<T, ID> {
@@ -83,7 +83,7 @@ export class GenericWebClient<T, ID, R> extends ViewWebClient<T, ID> {
       return res;
     } catch (err) {
       if (err && err.status === 404) {
-        return null;
+        return 0;
       } else {
         throw err;
       }

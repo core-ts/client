@@ -14,8 +14,8 @@ export class SearchWebClient<T, S extends SearchModel> {
     if (metaModel) {
       this._metamodel = metaModel;
     } else {
-      const metaModel2 = build(model);
-      this._metamodel = metaModel2;
+      const m = build(model);
+      this._metamodel = m;
     }
   }
   protected _metamodel: MetaModel;
