@@ -1,30 +1,18 @@
 export enum Type {
-  ObjectId = 'ObjectId',
   Date = 'date',
-  Boolean = 'boolean',
-
-  Number = 'number',
-  Integer = 'integer',
-  String = 'string',
-  Text = 'text',
 
   Object = 'object',
   Array = 'array',
-  Primitives =  'primitives',
-  Binary = 'binary'
 }
 
 export interface Metadata {
   name?: string;
   attributes: any;
   source?: string;
-  model?: any;
-  schema?: any;
 }
 
 export interface Attribute {
   name?: string;
-  field?: string;
   type: Type;
   key?: boolean;
   ignored?: boolean;
