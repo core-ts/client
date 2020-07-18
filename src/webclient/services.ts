@@ -91,6 +91,9 @@ export function optimizeSearchModel<S extends SearchModel>(s: S): S {
   if (o.limit != null && o.firstLimit === o.limit) {
     delete o['firstLimit'];
   }
+  if (o.page <= 1) {
+    delete o['page'];
+  }
   for (const key of Object.keys(o)) {
     if (Array.isArray(o[key]) && o[key].length === 0) {
       delete o[key];
