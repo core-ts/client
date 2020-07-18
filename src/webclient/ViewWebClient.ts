@@ -2,26 +2,20 @@ import {HttpRequest} from '../http/HttpRequest';
 import {build, json, Metadata, MetaModel} from './json';
 
 export class ViewWebClient<T, ID> {
-  constructor(protected serviceUrl: string, protected http: HttpRequest, protected model: Metadata) {
+  constructor(protected serviceUrl: string, protected http: HttpRequest, protected model: Metadata, protected _metamodel?: MetaModel) {
     this.metadata = this.metadata.bind(this);
     this.keys = this.keys.bind(this);
     this.all = this.all.bind(this);
     this.load = this.load.bind(this);
     this.formatObject = this.formatObject.bind(this);
     this.formatObjects = this.formatObjects.bind(this);
-    const metaModel = build(this.model);
-    const keys = metaModel.keys;
-    if (keys) {
-      for (const key of keys) {
-        if (key && key.length > 0) {
-          this._keys.push(key);
-        }
-      }
+    if (!_metamodel) {
+      const m = build(this.model);
+      this._metamodel = m;
     }
-    this._metamodel = metaModel;
+    this._keys = this._metamodel.keys;
   }
   private _keys: string[] = [];
-  protected _metamodel: MetaModel;
 
   keys(): string[] {
     return this._keys;

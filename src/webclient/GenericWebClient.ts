@@ -1,10 +1,10 @@
 import {HttpRequest} from '../http/HttpRequest';
-import {json, Metadata} from './json';
+import {json, Metadata, MetaModel} from './json';
 import {ViewWebClient} from './ViewWebClient';
 
 export class GenericWebClient<T, ID, R> extends ViewWebClient<T, ID> {
-  constructor(serviceUrl: string, http: HttpRequest, model: Metadata) {
-    super(serviceUrl, http, model);
+  constructor(serviceUrl: string, http: HttpRequest, model: Metadata, metaModel?: MetaModel) {
+    super(serviceUrl, http, model, metaModel);
     this.formatResultInfo = this.formatResultInfo.bind(this);
     this.insert = this.insert.bind(this);
     this.update = this.update.bind(this);
