@@ -8,6 +8,7 @@ import {ViewWebClient} from './ViewWebClient';
 export class ViewSearchWebClient<T, ID, S extends SearchModel> extends ViewWebClient<T, ID> {
   constructor(serviceUrl: string, http: HttpRequest, model: Metadata, metaModel?: MetaModel) {
     super(serviceUrl, http, model, metaModel);
+    this.search = this.search.bind(this);
     this.searchWebClient = new SearchWebClient<T, S>(serviceUrl, http, null, this._metamodel);
   }
   protected searchWebClient: SearchWebClient<T, S>;
