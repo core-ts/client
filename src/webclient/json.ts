@@ -54,7 +54,7 @@ export function build(model: Metadata): MetaModel {
         }
         case Type.Object: {
           if (attr.typeof) {
-            const x = this.build(attr.typeof);
+            const x = build(attr.typeof);
             x.attributeName = key;
             objectFields.push(x);
           }
@@ -62,7 +62,7 @@ export function build(model: Metadata): MetaModel {
         }
         case Type.Array: {
           if (attr.typeof) {
-            const y = this.build(attr.typeof);
+            const y = build(attr.typeof);
             y.attributeName = key;
             arrayFields.push(y);
           }
@@ -91,28 +91,28 @@ export function build(model: Metadata): MetaModel {
 
 export function keys(model: Metadata): string[] {
   const ids: string[] = Object.keys(model.attributes);
-  const primaryKeys: string[] = [];
+  const keys: string[] = [];
   for (const key of ids) {
     const attr: Attribute = model.attributes[key];
     if (attr && attr.ignored !== true && attr.key === true && attr.name && attr.name.length > 0) {
-      primaryKeys.push(attr.name);
+      keys.push(attr.name);
     }
   }
-  return primaryKeys;
+  return keys;
 }
 
 const _datereg = '/Date(';
 const _re = /-?\d+/;
 
-function jsonToDate(obj, fields: string[]) {
+function jsonToDate(obj: any, fields: string[]): void {
   if (!obj || !fields) {
     return obj;
   }
   if (!Array.isArray(obj)) {
     for (const field of fields) {
-      const val = obj[field];
-      if (val && !(val instanceof Date)) {
-        obj[field] = toDate(val);
+      const v = obj[field];
+      if (v && !(v instanceof Date)) {
+        obj[field] = toDate(v);
       }
     }
   }
