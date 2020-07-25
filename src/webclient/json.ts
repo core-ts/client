@@ -91,14 +91,14 @@ export function build(model: Metadata): MetaModel {
 
 export function keys(model: Metadata): string[] {
   const ids: string[] = Object.keys(model.attributes);
-  const primaryKeys: string[] = [];
+  const keys: string[] = [];
   for (const key of ids) {
     const attr: Attribute = model.attributes[key];
     if (attr && attr.ignored !== true && attr.key === true && attr.name && attr.name.length > 0) {
-      primaryKeys.push(attr.name);
+      keys.push(attr.name);
     }
   }
-  return primaryKeys;
+  return keys;
 }
 
 const _datereg = '/Date(';
