@@ -6,7 +6,7 @@ import {fromCsv, optimizeSearchModel} from '../util/search';
 import {build, json, jsonArray, Metadata, MetaModel} from './json';
 
 export class SearchWebClient<T, S extends SearchModel> {
-  constructor(protected serviceUrl: string, protected http: HttpRequest, model: Metadata, metaModel?: MetaModel) {
+  constructor(protected serviceUrl: string, protected http: HttpRequest, model: Metadata, metaModel?: MetaModel, protected searchGet?: boolean) {
     this.formatSearch = this.formatSearch.bind(this);
     this.makeUrlParameters = this.makeUrlParameters.bind(this);
     this.postOnly = this.postOnly.bind(this);
@@ -49,13 +49,13 @@ export class SearchWebClient<T, S extends SearchModel> {
     }
     const keys2 = Object.keys(s2);
     if (keys2.length === 0) {
-      const searchUrl = this.serviceUrl + '/search';
+      const searchUrl = (this.searchGet ? this.serviceUrl + '/search' : this.serviceUrl);
       const res: string|SearchResult<T> = await this.http.get(searchUrl);
       return buildSearchResult(s, res, this._metamodel);
     } else {
       const params = this.makeUrlParameters(s2);
-      const searchUrl = this.serviceUrl + '/search' + '?' + params;
-      // const searchUrl = this.serviceUrl + '' + '?' + params;
+      let searchUrl = (this.searchGet ? this.serviceUrl + '/search' : this.serviceUrl);
+      searchUrl = searchUrl + '?' + params;
       if (searchUrl.length <= 255) {
         const res: string|SearchResult<T> = await this.http.get(searchUrl);
         return buildSearchResult(s, res, this._metamodel);

@@ -1,12 +1,12 @@
 import {HttpRequest} from '../http/HttpRequest';
 import {SearchModel} from '../model/SearchModel';
-import {Metadata} from './json';
+import {Metadata, MetaModel} from './json';
 import {SearchWebClient} from './SearchWebClient';
 import {ViewWebClient} from './ViewWebClient';
 
 export class ViewSearchWebClient<T, ID, S extends SearchModel> extends SearchWebClient<T, S> {
-  constructor(serviceUrl: string, http: HttpRequest, model: Metadata) {
-    super(serviceUrl, http, model);
+  constructor(serviceUrl: string, http: HttpRequest, model: Metadata, metamodel?: MetaModel, searchGet?: boolean) {
+    super(serviceUrl, http, model, metamodel, searchGet);
     this.viewWebClient = new ViewWebClient<T, ID>(serviceUrl, http, model, this._metamodel);
     this.metadata = this.metadata.bind(this);
     this.keys = this.keys.bind(this);

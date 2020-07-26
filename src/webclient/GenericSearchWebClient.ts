@@ -6,8 +6,8 @@ import {Metadata, MetaModel} from './json';
 import {SearchWebClient} from './SearchWebClient';
 
 export class GenericSearchWebClient<T, ID, R, S extends SearchModel> extends SearchWebClient<T, S> {
-  constructor(serviceUrl: string, http: HttpRequest, model: Metadata, metamodel?: MetaModel) {
-    super(serviceUrl, http, model, metamodel);
+  constructor(serviceUrl: string, http: HttpRequest, model: Metadata, metamodel?: MetaModel, searchGet?: boolean) {
+    super(serviceUrl, http, model, metamodel, searchGet);
     this.genericWebClient = new GenericWebClient<T, ID, R>(serviceUrl, http, model, this._metamodel);
     this.metadata = this.metadata.bind(this);
     this.keys = this.keys.bind(this);
