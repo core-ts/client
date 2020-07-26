@@ -2,11 +2,10 @@ import {HttpRequest} from '../http/HttpRequest';
 import {keys, Metadata} from './json';
 
 export enum Status {
-  DuplicateKey = 0,
-  DataNotFound = 0,
+  NotFound = 0,
   Success = 1,
-  DataVersionError = 4,
-  Error = 2,
+  VersionError = 2,
+  Error = 4
 }
 
 export class ApprWebClient<ID> {
@@ -35,7 +34,7 @@ export class ApprWebClient<ID> {
       return res;
     } catch (err) {
       if (err && err.status === 404) {
-        return Status.DataNotFound;
+        return Status.NotFound;
       } else {
         return Status.Error;
       }
@@ -55,7 +54,7 @@ export class ApprWebClient<ID> {
       return res;
     } catch (err) {
       if (err && err.status === 404) {
-        return Status.DataNotFound;
+        return Status.NotFound;
       } else {
         return Status.Error;
       }
