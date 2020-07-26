@@ -8,16 +8,13 @@ export interface DiffModel<T, ID> {
 }
 
 export class DiffWebClient<T, ID>  {
-  constructor(protected serviceUrl: string, protected http: HttpRequest, protected metadata: Metadata, metaModel?: MetaModel) {
+  constructor(protected serviceUrl: string, protected http: HttpRequest, protected metadata: Metadata, _keys?: string[], metaModel?: MetaModel) {
     this.diff = this.diff.bind(this);
-    this.keys = this.keys.bind(this);
+    this._ids = (_keys ? _keys : keys(metadata));
     if (metaModel) {
-      this._ids = metaModel.keys;
       this._metaModel = metaModel;
     } else {
-      const m = build(metadata);
-      this._metaModel = m;
-      this._ids = m.keys;
+      this._metaModel = build(metadata);
     }
   }
   protected _ids: string[];

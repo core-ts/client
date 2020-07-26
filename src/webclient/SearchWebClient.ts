@@ -3,19 +3,19 @@ import {SearchModel} from '../model/SearchModel';
 import {SearchResult} from '../model/SearchResult';
 import {param} from '../util/param';
 import {fromCsv, optimizeSearchModel} from '../util/search';
-import {build, json, Metadata, MetaModel} from './json';
+import {build, json, jsonArray, Metadata, MetaModel} from './json';
 
 export class SearchWebClient<T, S extends SearchModel> {
   constructor(protected serviceUrl: string, protected http: HttpRequest, model: Metadata, metaModel?: MetaModel) {
     this.formatSearch = this.formatSearch.bind(this);
+    this.makeUrlParameters = this.makeUrlParameters.bind(this);
     this.search = this.search.bind(this);
     this.buildSearchResult = this.buildSearchResult.bind(this);
-    this.formatObjects = this.formatObjects.bind(this);
     if (metaModel) {
       this._metamodel = metaModel;
     } else {
-      const m = build(model);
-      this._metamodel = m;
+      const metaModel2 = build(model);
+      this._metamodel = metaModel2;
     }
   }
   protected _metamodel: MetaModel;
@@ -23,7 +23,9 @@ export class SearchWebClient<T, S extends SearchModel> {
   protected formatSearch(s: any) {
 
   }
-
+  protected makeUrlParameters(s: S): string {
+    return param(s);
+  }
   async search(s: S): Promise<SearchResult<T>> {
     this.formatSearch(s);
     if (this._metamodel && s.fields && s.fields.length > 0) {
@@ -46,14 +48,23 @@ export class SearchWebClient<T, S extends SearchModel> {
         return this.buildSearchResult(res);
       }
     } else {
-      const params = param(s2);
+      const params = this.makeUrlParameters(s2);
       const searchUrl = this.serviceUrl + '/search' + '?' + params;
-      if (searchUrl.length <= 1) {
+      // const searchUrl = this.serviceUrl + '' + '?' + params;
+      if (searchUrl.length <= 255) {
         const res: string|SearchResult<T> = await this.http.get(searchUrl);
         if (typeof res === 'string') {
           return fromCsv<T>(s, res);
         } else {
-          return this.buildSearchResult(res);
+          if (Array.isArray(res)) {
+            const result: SearchResult<T> = {
+              results: res,
+              total: res.length
+            };
+            return this.buildSearchResult(result);
+          } else {
+            return this.buildSearchResult(res);
+          }
         }
       } else {
         const postSearchUrl = this.serviceUrl + '/search';
@@ -69,20 +80,8 @@ export class SearchWebClient<T, S extends SearchModel> {
 
   protected buildSearchResult(r: SearchResult<T>): SearchResult<T> {
     if (r != null && r.results != null && r.results.length > 0) {
-      this.formatObjects(r.results);
+      jsonArray(r.results, this._metamodel);
     }
     return r;
-  }
-
-  protected formatObjects(list: any[]): any[] {
-    if (!list || list.length === 0) {
-      return list;
-    }
-    if (this._metamodel) {
-      for (const obj of list) {
-        json(obj, this._metamodel);
-      }
-    }
-    return list;
   }
 }

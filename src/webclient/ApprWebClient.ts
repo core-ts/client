@@ -9,12 +9,16 @@ export enum Status {
 }
 
 export class ApprWebClient<ID> {
-  constructor(protected serviceUrl: string, protected http: HttpRequest, protected model: Metadata, ids?: string[]) {
+  constructor(protected serviceUrl: string, protected http: HttpRequest, protected model: Metadata, _keys?: string[]) {
     this.approve = this.approve.bind(this);
     this.reject = this.reject.bind(this);
-    this._keys = (ids ? ids : keys(model));
+    this.keys = this.keys.bind(this);
+    this._keys = (_keys ? _keys : keys(model));
   }
   protected _keys: string[];
+  keys(): string[] {
+    return this._keys;
+  }
 
   async approve(id: ID): Promise<Status> {
     let url = this.serviceUrl + '/' + id + '/approve';

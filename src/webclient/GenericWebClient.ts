@@ -3,8 +3,8 @@ import {json, Metadata, MetaModel} from './json';
 import {ViewWebClient} from './ViewWebClient';
 
 export class GenericWebClient<T, ID, R> extends ViewWebClient<T, ID> {
-  constructor(serviceUrl: string, http: HttpRequest, model: Metadata, metaModel?: MetaModel) {
-    super(serviceUrl, http, model, metaModel);
+  constructor(serviceUrl: string, http: HttpRequest, model: Metadata, metamodel?: MetaModel) {
+    super(serviceUrl, http, model, metamodel);
     this.formatResultInfo = this.formatResultInfo.bind(this);
     this.insert = this.insert.bind(this);
     this.update = this.update.bind(this);
@@ -12,20 +12,20 @@ export class GenericWebClient<T, ID, R> extends ViewWebClient<T, ID> {
     this.delete = this.delete.bind(this);
   }
 
-  protected formatResultInfo(result: any): any {
-    if (result && result.status === 1 && result.value && typeof result.value === 'object') {
+  protected formatResultInfo(result: any, ctx?: any): any {
+    if (result && typeof result === 'object' && result.status === 1 && result.value && typeof result.value === 'object') {
       result.value = json(result.value, this._metamodel);
     }
     return result;
   }
 
-  async insert(obj: T): Promise<R> {
+  async insert(obj: T, ctx?: any): Promise<R> {
     json(obj, this._metamodel);
     const res = await this.http.post<R>(this.serviceUrl, obj);
-    return this.formatResultInfo(res);
+    return this.formatResultInfo(res, ctx);
   }
 
-  async update(obj: T): Promise<R> {
+  async update(obj: T, ctx?: any): Promise<R> {
     let url = this.serviceUrl;
     const keys = this.keys();
     if (keys && keys.length > 0) {
@@ -35,7 +35,7 @@ export class GenericWebClient<T, ID, R> extends ViewWebClient<T, ID> {
     }
     try {
       const res = await this.http.put<R>(url, obj);
-      return this.formatResultInfo(res);
+      return this.formatResultInfo(res, ctx);
     } catch (err) {
       if (err && err.status === 404) {
         const x: any = 0;
@@ -46,7 +46,7 @@ export class GenericWebClient<T, ID, R> extends ViewWebClient<T, ID> {
     }
   }
 
-  async patch(obj: T): Promise<R> {
+  async patch(obj: T, ctx?: any): Promise<R> {
     let url = this.serviceUrl;
     const keys = this.keys();
     if (keys && keys.length > 0) {
@@ -56,7 +56,7 @@ export class GenericWebClient<T, ID, R> extends ViewWebClient<T, ID> {
     }
     try {
       const res = await this.http.patch<R>(url, obj);
-      return this.formatResultInfo(res);
+      return this.formatResultInfo(res, ctx);
     } catch (err) {
       if (err && err.status === 404) {
         const x: any = 0;
@@ -67,7 +67,7 @@ export class GenericWebClient<T, ID, R> extends ViewWebClient<T, ID> {
     }
   }
 
-  async delete(id: ID): Promise<number> {
+  async delete(id: ID, ctx?: any): Promise<number> {
     let url = this.serviceUrl + '/' + id;
     if (typeof id === 'object' && this.model) {
       const keys = this.keys();

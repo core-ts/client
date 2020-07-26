@@ -3,13 +3,13 @@ import {SearchModel} from '../model/SearchModel';
 import {Status} from './ApprWebClient';
 import {DiffApprWebClient} from './DiffApprWebClient';
 import {DiffModel} from './DiffWebClient';
-import {Metadata, MetaModel} from './json';
+import {Metadata} from './json';
 import {ViewSearchWebClient} from './ViewSearchWebClient';
 
 export class ViewSearchDiffApprWebClient<T, ID, R, S extends SearchModel> extends ViewSearchWebClient<T, ID, S> {
-  constructor(serviceUrl: string, http: HttpRequest, model: Metadata, metaModel?: MetaModel) {
-    super(serviceUrl, http, model, metaModel);
-    this.diffWebClient = new DiffApprWebClient(serviceUrl, http, null, this._metamodel);
+  constructor(serviceUrl: string, http: HttpRequest, model: Metadata) {
+    super(serviceUrl, http, model);
+    this.diffWebClient = new DiffApprWebClient(serviceUrl, http, null, this.keys(), this._metamodel);
     this.diff = this.diff.bind(this);
     this.approve = this.approve.bind(this);
     this.reject = this.reject.bind(this);
