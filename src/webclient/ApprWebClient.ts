@@ -2,10 +2,11 @@ import {HttpRequest} from '../http/HttpRequest';
 import {keys, Metadata} from './json';
 
 export enum Status {
+  DuplicateKey = 0,
   DataNotFound = 0,
   Success = 1,
-  Error = 2,
   DataVersionError = 4,
+  Error = 2,
 }
 
 export class ApprWebClient<ID> {
