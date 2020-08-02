@@ -198,15 +198,22 @@ export class ViewWebClient<T, ID> {
   }
 
   async load(id: ID, ctx?: any): Promise<T> {
-    let url = this.serviceUrl + '/' + id;
-    if (this._keys && this._keys.length > 0 && typeof id === 'object') {
-      url = this.serviceUrl;
-      for (const name of this._keys) {
-        url = url + '/' + id[name];
+    try {
+      let url = this.serviceUrl + '/' + id;
+      if (this._keys && this._keys.length > 0 && typeof id === 'object') {
+        url = this.serviceUrl;
+        for (const name of this._keys) {
+          url = url + '/' + id[name];
+        }
       }
+      const obj = await this.http.get<T>(url);
+      return json(obj, this._metamodel);
+    } catch (err) {
+      if (err && (err.status === 404 || err.status === 410)) {
+        return null;
+      }
+      throw err;
     }
-    const obj = await this.http.get<T>(url);
-    return json(obj, this._metamodel);
   }
 }
 
@@ -234,14 +241,14 @@ export class GenericWebClient<T, ID, R> extends ViewWebClient<T, ID> {
   }
 
   async update(obj: T, ctx?: any): Promise<R> {
-    let url = this.serviceUrl;
-    const ks = this.keys();
-    if (ks && ks.length > 0) {
-      for (const name of ks) {
-        url += '/' + obj[name];
-      }
-    }
     try {
+      let url = this.serviceUrl;
+      const ks = this.keys();
+      if (ks && ks.length > 0) {
+        for (const name of ks) {
+          url += '/' + obj[name];
+        }
+      }
       const res = await this.http.put<R>(url, obj);
       return this.formatResultInfo(res, ctx);
     } catch (err) {
@@ -259,14 +266,14 @@ export class GenericWebClient<T, ID, R> extends ViewWebClient<T, ID> {
   }
 
   async patch(obj: T, ctx?: any): Promise<R> {
-    let url = this.serviceUrl;
-    const ks = this.keys();
-    if (ks && ks.length > 0) {
-      for (const name of ks) {
-        url += '/' + obj[name];
-      }
-    }
     try {
+      let url = this.serviceUrl;
+      const ks = this.keys();
+      if (ks && ks.length > 0) {
+        for (const name of ks) {
+          url += '/' + obj[name];
+        }
+      }
       const res = await this.http.patch<R>(url, obj);
       return this.formatResultInfo(res, ctx);
     } catch (err) {
@@ -284,17 +291,17 @@ export class GenericWebClient<T, ID, R> extends ViewWebClient<T, ID> {
   }
 
   async delete(id: ID, ctx?: any): Promise<number> {
-    let url = this.serviceUrl + '/' + id;
-    if (typeof id === 'object' && this.model) {
-      const ks = this.keys();
-      if (ks && ks.length > 0) {
-        url = this.serviceUrl;
-        for (const key of ks) {
-          url = url + '/' + id[key];
+    try {
+      let url = this.serviceUrl + '/' + id;
+      if (typeof id === 'object' && this.model) {
+        const ks = this.keys();
+        if (ks && ks.length > 0) {
+          url = this.serviceUrl;
+          for (const key of ks) {
+            url = url + '/' + id[key];
+          }
         }
       }
-    }
-    try {
       const res = await this.http.delete<number>(url);
       return res;
     } catch (err) {
@@ -418,15 +425,15 @@ export class DiffWebClient<T, ID>  {
     return this._ids;
   }
   async diff(id: ID): Promise<DiffModel<T, ID>> {
-    let url = this.serviceUrl + '/' + id + '/diff';
-    if (this._ids && this._ids.length > 0 && typeof id === 'object') {
-      url = this.serviceUrl;
-      for (const name of this._ids) {
-        url = url + '/' + id[name];
-      }
-      url = url + '/diff';
-    }
     try {
+      let url = this.serviceUrl + '/' + id + '/diff';
+      if (this._ids && this._ids.length > 0 && typeof id === 'object') {
+        url = this.serviceUrl;
+        for (const name of this._ids) {
+          url = url + '/' + id[name];
+        }
+        url = url + '/diff';
+      }
       const res = await this.http.get<DiffModel<any, ID>>(url);
       if (!res) {
         return null;
@@ -487,15 +494,15 @@ export class ApprWebClient<ID> {
   }
 
   async approve(id: ID): Promise<Status> {
-    let url = this.serviceUrl + '/' + id + '/approve';
-    if (this._keys && this._keys.length > 0 && typeof id === 'object') {
-      url = this.serviceUrl;
-      for (const name of this._keys) {
-        url = url + '/' + id[name];
-      }
-      url = url + '/approve';
-    }
     try {
+      let url = this.serviceUrl + '/' + id + '/approve';
+      if (this._keys && this._keys.length > 0 && typeof id === 'object') {
+        url = this.serviceUrl;
+        for (const name of this._keys) {
+          url = url + '/' + id[name];
+        }
+        url = url + '/approve';
+      }
       const res = await this.http.get<Status>(url);
       return res;
     } catch (err) {
@@ -510,15 +517,15 @@ export class ApprWebClient<ID> {
     }
   }
   async reject(id: ID): Promise<Status> {
-    let url = this.serviceUrl + '/' + id + '/reject';
-    if (this._keys && this._keys.length > 0 && typeof id === 'object') {
-      url = this.serviceUrl;
-      for (const name of this._keys) {
-        url = url + '/' + id[name];
-      }
-      url = url + '/reject';
-    }
     try {
+      let url = this.serviceUrl + '/' + id + '/reject';
+      if (this._keys && this._keys.length > 0 && typeof id === 'object') {
+        url = this.serviceUrl;
+        for (const name of this._keys) {
+          url = url + '/' + id[name];
+        }
+        url = url + '/reject';
+      }
       const res = await this.http.get<Status>(url);
       return res;
     } catch (err) {
@@ -599,11 +606,9 @@ export class GenericSearchWebClient<T, ID, R, S extends SearchModel> extends Sea
   metadata(): Metadata {
     return this.genericWebClient.metadata();
   }
-
   all(ctx?: any): Promise<T[]> {
     return this.genericWebClient.all(ctx);
   }
-
   load(id: ID, ctx?: any): Promise<T> {
     return this.genericWebClient.load(id, ctx);
   }
@@ -611,15 +616,12 @@ export class GenericSearchWebClient<T, ID, R, S extends SearchModel> extends Sea
   insert(obj: T, ctx?: any): Promise<R> {
     return this.genericWebClient.insert(obj, ctx);
   }
-
   update(obj: T, ctx?: any): Promise<R> {
     return this.genericWebClient.update(obj, ctx);
   }
-
   patch(obj: T, ctx?: any): Promise<R> {
     return this.genericWebClient.patch(obj, ctx);
   }
-
   delete(id: ID, ctx?: any): Promise<number> {
     return this.genericWebClient.delete(id, ctx);
   }
@@ -637,16 +639,13 @@ export class ViewSearchDiffApprWebClient<T, ID, S extends SearchModel> extends V
   async diff(id: ID): Promise<DiffModel<T, ID>> {
     return this.diffWebClient.diff(id);
   }
-
   async approve(id: ID): Promise<Status> {
     return this.diffWebClient.approve(id);
   }
-
   async reject(id: ID): Promise<Status> {
     return this.diffWebClient.reject(id);
   }
 }
-
 
 export class GenericSearchDiffApprWebClient<T, ID, R, S extends SearchModel> extends GenericSearchWebClient<T, ID, R, S> {
   constructor(serviceUrl: string, http: HttpRequest, model: Metadata, metamodel?: MetaModel, searchGet?: boolean) {
@@ -660,11 +659,9 @@ export class GenericSearchDiffApprWebClient<T, ID, R, S extends SearchModel> ext
   async diff(id: ID): Promise<DiffModel<T, ID>> {
     return this.diffWebClient.diff(id);
   }
-
   async approve(id: ID): Promise<Status> {
     return this.diffWebClient.approve(id);
   }
-
   async reject(id: ID): Promise<Status> {
     return this.diffWebClient.reject(id);
   }
