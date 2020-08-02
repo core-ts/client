@@ -314,7 +314,6 @@ export class GenericWebClient<T, ID, R> extends ViewWebClient<T, ID> {
   }
 }
 
-
 export class SearchWebClient<T, S extends SearchModel> {
   constructor(protected serviceUrl: string, protected http: HttpRequest, model: Metadata, metaModel?: MetaModel, protected searchGet?: boolean) {
     this.formatSearch = this.formatSearch.bind(this);
@@ -540,7 +539,6 @@ export class ApprWebClient<ID> {
     }
   }
 }
-
 
 export class DiffApprWebClient<T, ID> extends DiffWebClient<T, ID> {
   constructor(protected serviceUrl: string, protected http: HttpRequest, protected model: Metadata, metaModel?: MetaModel, keys?: string[]) {
