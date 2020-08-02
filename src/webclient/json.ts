@@ -89,22 +89,22 @@ export function build(model: Metadata): MetaModel {
   return metadata;
 }
 
-export function keys(model: Metadata): string[] {
+export function buildKeys(model: Metadata): string[] {
   const ids: string[] = Object.keys(model.attributes);
-  const keys: string[] = [];
+  const pks: string[] = [];
   for (const key of ids) {
     const attr: Attribute = model.attributes[key];
     if (attr && attr.ignored !== true && attr.key === true && attr.name && attr.name.length > 0) {
-      keys.push(attr.name);
+      pks.push(attr.name);
     }
   }
-  return keys;
+  return pks;
 }
 
-const _datereg = '/Date(';
-const _re = /-?\d+/;
+const _rd = '/Date(';
+const _rn = /-?\d+/;
 
-function jsonToDate(obj: any, fields: string[]): void {
+function jsonToDate(obj: any, fields: string[]) {
   if (!obj || !fields) {
     return obj;
   }
@@ -127,9 +127,9 @@ function toDate(v: any): Date {
   } else if (typeof v === 'number') {
     return new Date(v);
   }
-  const i = v.indexOf(_datereg);
+  const i = v.indexOf(_rd);
   if (i >= 0) {
-    const m = _re.exec(v);
+    const m = _rn.exec(v);
     const d = parseInt(m[0], null);
     return new Date(d);
   } else {
@@ -142,7 +142,7 @@ function toDate(v: any): Date {
   }
 }
 
-export function json(obj: any, meta: MetaModel): void {
+export function json(obj: any, meta: MetaModel): any {
   jsonToDate(obj, meta.dateFields);
   if (meta.objectFields) {
     for (const objectField of meta.objectFields) {
@@ -163,4 +163,15 @@ export function json(obj: any, meta: MetaModel): void {
       }
     }
   }
+  return obj;
+}
+
+export function jsonArray<T>(list: T[], metaModel: MetaModel): T[] {
+  if (!list || list.length === 0) {
+    return list;
+  }
+  for (const obj of list) {
+    json(obj, metaModel);
+  }
+  return list;
 }

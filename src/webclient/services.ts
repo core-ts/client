@@ -1,4 +1,4 @@
-import {build, json, keys, Metadata, MetaModel} from './json';
+import {build, buildKeys, json, jsonArray, Metadata, MetaModel} from './json';
 
 export interface SearchModel {
   limit: number;
@@ -11,24 +11,71 @@ export interface SearchResult<T> {
 }
 
 export function param(obj: any): string {
-  const keys = Object.keys(obj);
+  const ks = Object.keys(obj);
   const arrs = [];
-  for (const item of keys) {
-    const str = encodeURIComponent(item) + '=' + encodeURIComponent(obj[item]);
-    arrs.push(str);
+  for (const key of ks) {
+    if (key === 'fields') {
+      if (Array.isArray(obj[key])) {
+        const x = obj[key].join(',');
+        const str = encodeURIComponent(key) + '=' + encodeURIComponent(x);
+        arrs.push(str);
+      }
+    } else if (key === 'excluding') {
+      const t2 = obj[key];
+      if (typeof t2 === 'object') {
+        for (const k2 of t2) {
+          const v = t2[k2];
+          if (Array.isArray(v)) {
+            const arr = [];
+            for (const y of v) {
+              if (y) {
+                if (typeof y === 'string') {
+                  arr.push(y);
+                } else if (typeof y === 'number') {
+                  arr.push(y.toString());
+                }
+              }
+            }
+            const x = arr.join(',');
+            const str = encodeURIComponent('excluding.' + k2) + '=' + encodeURIComponent(x);
+            arrs.push(str);
+          } else {
+            const str = encodeURIComponent('excluding.' + k2) + '=' + encodeURIComponent(v);
+            arrs.push(str);
+          }
+        }
+      }
+    } else {
+      const v = obj[key];
+      if (Array.isArray(v)) {
+        const arr = [];
+        for (const y of v) {
+          if (y) {
+            if (typeof y === 'string') {
+              arr.push(y);
+            } else if (typeof y === 'number') {
+              arr.push(y.toString());
+            }
+          }
+        }
+        const x = arr.join(',');
+        const str = encodeURIComponent(key) + '=' + encodeURIComponent(x);
+        arrs.push(str);
+      } else {
+        const str = encodeURIComponent(key) + '=' + encodeURIComponent(v);
+        arrs.push(str);
+      }
+    }
   }
   return arrs.join('&');
 }
 
-
 export interface Headers {
   [key: string]: any;
 }
-
 export interface HttpOptionsService {
   getHttpOptions(): { headers?: Headers };
 }
-
 export interface HttpRequest {
   get<T>(url: string, options?: {headers?: Headers}): Promise<T>;
   delete<T>(url: string, options?: {headers?: Headers}): Promise<T>;
@@ -44,7 +91,6 @@ export interface CsvService {
 export class resource {
   static csv: CsvService;
 }
-
 export class DefaultCsvService {
   constructor(private c: any) {
     this._csv = c;
@@ -57,15 +103,14 @@ export class DefaultCsvService {
     });
   }
 }
-
 export function fromString(value: string): Promise<string[][]> {
   return resource.csv.fromString(value);
 }
 
 export function optimizeSearchModel<S extends SearchModel>(s: S): S {
-  const keys = Object.keys(s);
+  const ks = Object.keys(s);
   const o: any = {};
-  for (const key of keys) {
+  for (const key of ks) {
     const p = s[key];
     if (key === 'page') {
       if (p && p >= 1) {
@@ -101,7 +146,6 @@ export function optimizeSearchModel<S extends SearchModel>(s: S): S {
   }
   return o;
 }
-
 export async function fromCsv<T>(m: SearchModel, csv: string): Promise<SearchResult<T>> {
   const items = await fromString(csv);
   const arr = [];
@@ -122,21 +166,24 @@ export async function fromCsv<T>(m: SearchModel, csv: string): Promise<SearchRes
   return x;
 }
 
+
 export class ViewWebClient<T, ID> {
-  constructor(protected serviceUrl: string, protected http: HttpRequest, protected model: Metadata, protected _metamodel?: MetaModel) {
+  constructor(protected serviceUrl: string, protected http: HttpRequest, protected model: Metadata, metamodel?: MetaModel) {
     this.metadata = this.metadata.bind(this);
     this.keys = this.keys.bind(this);
     this.all = this.all.bind(this);
     this.load = this.load.bind(this);
-    this.formatObject = this.formatObject.bind(this);
-    this.formatObjects = this.formatObjects.bind(this);
-    if (!_metamodel) {
+    if (metamodel) {
+      this._metamodel = metamodel;
+      this._keys = metamodel.keys;
+    } else {
       const m = build(this.model);
       this._metamodel = m;
+      this._keys = m.keys;
     }
-    this._keys = this._metamodel.keys;
   }
   private _keys: string[] = [];
+  protected _metamodel: MetaModel;
 
   keys(): string[] {
     return this._keys;
@@ -145,12 +192,12 @@ export class ViewWebClient<T, ID> {
     return this.model;
   }
 
-  async all(): Promise<T[]> {
-    const res = await this.http.get<T[]>(this.serviceUrl);
-    return this.formatObjects(res);
+  async all(ctx?: any): Promise<T[]> {
+    const list = await this.http.get<T[]>(this.serviceUrl);
+    return jsonArray(list, this._metamodel);
   }
 
-  async load(id: ID): Promise<T> {
+  async load(id: ID, ctx?: any): Promise<T> {
     let url = this.serviceUrl + '/' + id;
     if (this._keys && this._keys.length > 0 && typeof id === 'object') {
       url = this.serviceUrl;
@@ -158,37 +205,14 @@ export class ViewWebClient<T, ID> {
         url = url + '/' + id[name];
       }
     }
-    try {
-      const res = await this.http.get<T>(url);
-      return this.formatObject(res);
-    } catch (err) {
-      if (err && err.status === 404) {
-        return null;
-      } else {
-        throw err;
-      }
-    }
-  }
-
-  protected formatObjects(list: T[]): T[] {
-    if (!list || list.length === 0) {
-      return list;
-    }
-    for (const obj of list) {
-      json(obj, this._metamodel);
-    }
-    return list;
-  }
-
-  protected formatObject(obj: any): any {
-    json(obj, this._metamodel);
-    return obj;
+    const obj = await this.http.get<T>(url);
+    return json(obj, this._metamodel);
   }
 }
 
 export class GenericWebClient<T, ID, R> extends ViewWebClient<T, ID> {
-  constructor(serviceUrl: string, http: HttpRequest, model: Metadata, metaModel?: MetaModel) {
-    super(serviceUrl, http, model, metaModel);
+  constructor(serviceUrl: string, http: HttpRequest, model: Metadata, metamodel?: MetaModel) {
+    super(serviceUrl, http, model, metamodel);
     this.formatResultInfo = this.formatResultInfo.bind(this);
     this.insert = this.insert.bind(this);
     this.update = this.update.bind(this);
@@ -196,68 +220,76 @@ export class GenericWebClient<T, ID, R> extends ViewWebClient<T, ID> {
     this.delete = this.delete.bind(this);
   }
 
-  protected formatResultInfo(result: any): any {
-    if (result && result.status === 1 && result.value && typeof result.value === 'object') {
+  protected formatResultInfo(result: any, ctx?: any): any {
+    if (result && typeof result === 'object' && result.status === 1 && result.value && typeof result.value === 'object') {
       result.value = json(result.value, this._metamodel);
     }
     return result;
   }
 
-  async insert(obj: T): Promise<R> {
+  async insert(obj: T, ctx?: any): Promise<R> {
     json(obj, this._metamodel);
     const res = await this.http.post<R>(this.serviceUrl, obj);
-    return this.formatResultInfo(res);
+    return this.formatResultInfo(res, ctx);
   }
 
-  async update(obj: T): Promise<R> {
+  async update(obj: T, ctx?: any): Promise<R> {
     let url = this.serviceUrl;
-    const keys = this.keys();
-    if (keys && keys.length > 0) {
-      for (const name of keys) {
+    const ks = this.keys();
+    if (ks && ks.length > 0) {
+      for (const name of ks) {
         url += '/' + obj[name];
       }
     }
     try {
       const res = await this.http.put<R>(url, obj);
-      return this.formatResultInfo(res);
+      return this.formatResultInfo(res, ctx);
     } catch (err) {
-      if (err && err.status === 404) {
-        const x: any = 0;
-        return x;
-      } else {
-        throw err;
+      if (err) {
+        if (err.status === 404 || err.status === 410) {
+          const x: any = 0;
+          return x;
+        } else if (err.status === 409) {
+          const x: any = -1;
+          return x;
+        }
       }
+      throw err;
     }
   }
 
-  async patch(obj: T): Promise<R> {
+  async patch(obj: T, ctx?: any): Promise<R> {
     let url = this.serviceUrl;
-    const keys = this.keys();
-    if (keys && keys.length > 0) {
-      for (const name of keys) {
+    const ks = this.keys();
+    if (ks && ks.length > 0) {
+      for (const name of ks) {
         url += '/' + obj[name];
       }
     }
     try {
       const res = await this.http.patch<R>(url, obj);
-      return this.formatResultInfo(res);
+      return this.formatResultInfo(res, ctx);
     } catch (err) {
-      if (err && err.status === 404) {
-        const x: any = 0;
-        return x;
-      } else {
-        throw err;
+      if (err) {
+        if (err.status === 404 || err.status === 410) {
+          const x: any = 0;
+          return x;
+        } else if (err.status === 409) {
+          const x: any = -1;
+          return x;
+        }
       }
+      throw err;
     }
   }
 
-  async delete(id: ID): Promise<number> {
+  async delete(id: ID, ctx?: any): Promise<number> {
     let url = this.serviceUrl + '/' + id;
     if (typeof id === 'object' && this.model) {
-      const keys = this.keys();
-      if (keys && keys.length > 0) {
+      const ks = this.keys();
+      if (ks && ks.length > 0) {
         url = this.serviceUrl;
-        for (const key of keys) {
+        for (const key of ks) {
           url = url + '/' + id[key];
         }
       }
@@ -266,7 +298,7 @@ export class GenericWebClient<T, ID, R> extends ViewWebClient<T, ID> {
       const res = await this.http.delete<number>(url);
       return res;
     } catch (err) {
-      if (err && err.status === 404) {
+      if (err && (err.status === 404 || err.status === 410)) {
         return 0;
       } else {
         throw err;
@@ -275,25 +307,32 @@ export class GenericWebClient<T, ID, R> extends ViewWebClient<T, ID> {
   }
 }
 
+
 export class SearchWebClient<T, S extends SearchModel> {
-  constructor(protected serviceUrl: string, protected http: HttpRequest, model: Metadata, metaModel?: MetaModel) {
+  constructor(protected serviceUrl: string, protected http: HttpRequest, model: Metadata, metaModel?: MetaModel, protected searchGet?: boolean) {
     this.formatSearch = this.formatSearch.bind(this);
+    this.makeUrlParameters = this.makeUrlParameters.bind(this);
+    this.postOnly = this.postOnly.bind(this);
     this.search = this.search.bind(this);
-    this.buildSearchResult = this.buildSearchResult.bind(this);
-    this.formatObjects = this.formatObjects.bind(this);
     if (metaModel) {
       this._metamodel = metaModel;
     } else {
-      const m = build(model);
-      this._metamodel = m;
+      const metaModel2 = build(model);
+      this._metamodel = metaModel2;
     }
   }
   protected _metamodel: MetaModel;
 
+  protected postOnly(s: S): boolean {
+    return false;
+  }
+
   protected formatSearch(s: any) {
 
   }
-
+  protected makeUrlParameters(s: S): string {
+    return param(s);
+  }
   async search(s: S): Promise<SearchResult<T>> {
     this.formatSearch(s);
     if (this._metamodel && s.fields && s.fields.length > 0) {
@@ -306,78 +345,75 @@ export class SearchWebClient<T, S extends SearchModel> {
       }
     }
     const s2 = optimizeSearchModel(s);
+    if (this.postOnly(s2)) {
+      const postSearchUrl = this.serviceUrl + '/search';
+      const res: string|SearchResult<T> = await this.http.post<string|SearchResult<T>>(postSearchUrl, s2);
+      return buildSearchResult(s, res, this._metamodel);
+    }
     const keys2 = Object.keys(s2);
     if (keys2.length === 0) {
-      const searchUrl = this.serviceUrl + '/search';
+      const searchUrl = (this.searchGet ? this.serviceUrl + '/search' : this.serviceUrl);
       const res: string|SearchResult<T> = await this.http.get(searchUrl);
-      if (typeof res === 'string') {
-        return fromCsv<T>(s, res);
-      } else {
-        return this.buildSearchResult(res);
-      }
+      return buildSearchResult(s, res, this._metamodel);
     } else {
-      const params = param(s2);
-      const searchUrl = this.serviceUrl + '/search' + '?' + params;
-      if (searchUrl.length <= 1) {
+      const params = this.makeUrlParameters(s2);
+      let searchUrl = (this.searchGet ? this.serviceUrl + '/search' : this.serviceUrl);
+      searchUrl = searchUrl + '?' + params;
+      if (searchUrl.length <= 255) {
         const res: string|SearchResult<T> = await this.http.get(searchUrl);
-        if (typeof res === 'string') {
-          return fromCsv<T>(s, res);
-        } else {
-          return this.buildSearchResult(res);
-        }
+        return buildSearchResult(s, res, this._metamodel);
       } else {
         const postSearchUrl = this.serviceUrl + '/search';
         const res: string|SearchResult<T> = await this.http.post<string|SearchResult<T>>(postSearchUrl, s2);
-        if (typeof res === 'string') {
-          return fromCsv<T>(s, res);
-        } else {
-          return this.buildSearchResult(res);
-        }
+        return buildSearchResult(s, res, this._metamodel);
       }
     }
-  }
-
-  protected buildSearchResult(r: SearchResult<T>): SearchResult<T> {
-    if (r != null && r.results != null && r.results.length > 0) {
-      this.formatObjects(r.results);
-    }
-    return r;
-  }
-
-  protected formatObjects(list: any[]): any[] {
-    if (!list || list.length === 0) {
-      return list;
-    }
-    if (this._metamodel) {
-      for (const obj of list) {
-        json(obj, this._metamodel);
-      }
-    }
-    return list;
   }
 }
+export function buildSearchResult<T, S extends SearchModel>(s: S, res: string|SearchResult<T>|T[], metamodel: MetaModel): SearchResult<T>|Promise<SearchResult<T>> {
+  if (typeof res === 'string') {
+    return fromCsv<T>(s, res);
+  } else {
+    if (Array.isArray(res)) {
+      const result: SearchResult<T> = {
+        results: res,
+        total: res.length
+      };
+      return jsonSearchResult(result, metamodel);
+    } else {
+      return jsonSearchResult(res, metamodel);
+    }
+  }
+}
+export function jsonSearchResult<T>(r: SearchResult<T>, metamodel: MetaModel): SearchResult<T> {
+  if (r != null && r.results != null && r.results.length > 0) {
+    jsonArray(r.results, metamodel);
+  }
+  return r;
+}
+
 
 export interface DiffModel<T, ID> {
   id?: ID;
   origin?: T;
   value: T;
 }
-
 export class DiffWebClient<T, ID>  {
-  constructor(protected serviceUrl: string, protected http: HttpRequest, protected metadata: Metadata, metaModel?: MetaModel) {
+  constructor(protected serviceUrl: string, protected http: HttpRequest, protected metadata: Metadata, metaModel?: MetaModel, _keys?: string[]) {
     this.diff = this.diff.bind(this);
-    this.keys = this.keys.bind(this);
     if (metaModel) {
-      this._ids = metaModel.keys;
       this._metaModel = metaModel;
-    } else {
-      const m = build(metadata);
-      this._metaModel = m;
-      this._ids = m.keys;
+      this._ids = metaModel.keys;
+    } else if (metadata) {
+      this._metaModel = build(metadata);
+      this._ids = this._metaModel.keys;
+    }
+    if (!this._ids && _keys) {
+      this._ids = _keys;
     }
   }
   protected _ids: string[];
-  private _metaModel: MetaModel;
+  protected _metaModel: MetaModel;
   keys(): string[] {
     return this._ids;
   }
@@ -425,19 +461,30 @@ export class DiffWebClient<T, ID>  {
 }
 
 export enum Status {
-  DataNotFound = 0,
+  NotFound = 0,
   Success = 1,
-  Error = 2,
-  DataVersionError = 4,
+  VersionError = 2,
+  Error = 4
 }
-
 export class ApprWebClient<ID> {
-  constructor(protected serviceUrl: string, protected http: HttpRequest, protected model: Metadata, ids?: string[]) {
+  constructor(protected serviceUrl: string, protected http: HttpRequest, protected model: Metadata, metaModel?: MetaModel, _ids?: string[]) {
     this.approve = this.approve.bind(this);
     this.reject = this.reject.bind(this);
-    this._keys = (ids ? ids : keys(model));
+    this.keys = this.keys.bind(this);
+    if (metaModel) {
+      this._keys = metaModel.keys;
+    } else if (_ids) {
+      this._keys = _ids;
+    } else if (model) {
+      this._keys = buildKeys(model);
+    } else {
+      this._keys = [];
+    }
   }
   protected _keys: string[];
+  keys(): string[] {
+    return this._keys;
+  }
 
   async approve(id: ID): Promise<Status> {
     let url = this.serviceUrl + '/' + id + '/approve';
@@ -452,11 +499,14 @@ export class ApprWebClient<ID> {
       const res = await this.http.get<Status>(url);
       return res;
     } catch (err) {
-      if (err && err.status === 404) {
-        return Status.DataNotFound;
-      } else {
-        return Status.Error;
+      if (err) {
+        if (err.status === 404 || err.status === 410) {
+          return Status.NotFound;
+        } else if (err.status === 409) {
+          return Status.VersionError;
+        }
       }
+      return Status.Error;
     }
   }
   async reject(id: ID): Promise<Status> {
@@ -472,19 +522,23 @@ export class ApprWebClient<ID> {
       const res = await this.http.get<Status>(url);
       return res;
     } catch (err) {
-      if (err && err.status === 404) {
-        return Status.DataNotFound;
-      } else {
-        return Status.Error;
+      if (err) {
+        if (err.status === 404 || err.status === 410) {
+          return Status.NotFound;
+        } else if (err.status === 409) {
+          return Status.VersionError;
+        }
       }
+      return Status.Error;
     }
   }
 }
 
+
 export class DiffApprWebClient<T, ID> extends DiffWebClient<T, ID> {
-  constructor(protected serviceUrl: string, protected http: HttpRequest, protected model: Metadata, metaModel?: MetaModel) {
-    super(serviceUrl, http, model, metaModel);
-    this.apprWebClient = new ApprWebClient(serviceUrl, http, null, this._ids);
+  constructor(protected serviceUrl: string, protected http: HttpRequest, protected model: Metadata, metaModel?: MetaModel, keys?: string[]) {
+    super(serviceUrl, http, model, metaModel, keys);
+    this.apprWebClient = new ApprWebClient(serviceUrl, http, model, this._metaModel, this._ids);
     this.approve = this.approve.bind(this);
     this.reject = this.reject.bind(this);
   }
@@ -497,36 +551,84 @@ export class DiffApprWebClient<T, ID> extends DiffWebClient<T, ID> {
   }
 }
 
-export class ViewSearchWebClient<T, ID, S extends SearchModel> extends ViewWebClient<T, ID> {
-  constructor(serviceUrl: string, http: HttpRequest, model: Metadata, metaModel?: MetaModel) {
-    super(serviceUrl, http, model, metaModel);
-    this.search = this.search.bind(this);
-    this.searchWebClient = new SearchWebClient<T, S>(serviceUrl, http, null, this._metamodel);
+export class ViewSearchWebClient<T, ID, S extends SearchModel> extends SearchWebClient<T, S> {
+  constructor(serviceUrl: string, http: HttpRequest, model: Metadata, metamodel?: MetaModel, searchGet?: boolean) {
+    super(serviceUrl, http, model, metamodel, searchGet);
+    this.viewWebClient = new ViewWebClient<T, ID>(serviceUrl, http, model, this._metamodel);
+    this.metadata = this.metadata.bind(this);
+    this.keys = this.keys.bind(this);
+    this.all = this.all.bind(this);
+    this.load = this.load.bind(this);
   }
-  protected searchWebClient: SearchWebClient<T, S>;
+  protected viewWebClient: ViewWebClient<T, ID>;
 
-  search(s: S): Promise<SearchResult<T>> {
-    return this.searchWebClient.search(s);
+  keys(): string[] {
+    return this.viewWebClient.keys();
+  }
+  metadata(): Metadata {
+    return this.viewWebClient.metadata();
+  }
+
+  all(ctx?: any): Promise<T[]> {
+    return this.viewWebClient.all(ctx);
+  }
+
+  load(id: ID, ctx?: any): Promise<T> {
+    return this.viewWebClient.load(id, ctx);
   }
 }
 
-export class GenericSearchWebClient<T, ID, R, S extends SearchModel> extends GenericWebClient<T, ID, R> {
-  constructor(serviceUrl: string, http: HttpRequest, model: Metadata, metaModel?: MetaModel) {
-    super(serviceUrl, http, model, metaModel);
-    this.search = this.search.bind(this);
-    this.searchWebClient = new SearchWebClient<T, S>(serviceUrl, http, null, this._metamodel);
+export class GenericSearchWebClient<T, ID, R, S extends SearchModel> extends SearchWebClient<T, S> {
+  constructor(serviceUrl: string, http: HttpRequest, model: Metadata, metamodel?: MetaModel, searchGet?: boolean) {
+    super(serviceUrl, http, model, metamodel, searchGet);
+    this.genericWebClient = new GenericWebClient<T, ID, R>(serviceUrl, http, model, this._metamodel);
+    this.metadata = this.metadata.bind(this);
+    this.keys = this.keys.bind(this);
+    this.all = this.all.bind(this);
+    this.load = this.load.bind(this);
+    this.insert = this.insert.bind(this);
+    this.update = this.update.bind(this);
+    this.patch = this.patch.bind(this);
+    this.delete = this.delete.bind(this);
   }
-  protected searchWebClient: SearchWebClient<T, S>;
+  protected genericWebClient: GenericWebClient<T, ID, R>;
 
-  search(s: S): Promise<SearchResult<T>> {
-    return this.searchWebClient.search(s);
+  keys(): string[] {
+    return this.genericWebClient.keys();
+  }
+  metadata(): Metadata {
+    return this.genericWebClient.metadata();
+  }
+
+  all(ctx?: any): Promise<T[]> {
+    return this.genericWebClient.all(ctx);
+  }
+
+  load(id: ID, ctx?: any): Promise<T> {
+    return this.genericWebClient.load(id, ctx);
+  }
+
+  insert(obj: T, ctx?: any): Promise<R> {
+    return this.genericWebClient.insert(obj, ctx);
+  }
+
+  update(obj: T, ctx?: any): Promise<R> {
+    return this.genericWebClient.update(obj, ctx);
+  }
+
+  patch(obj: T, ctx?: any): Promise<R> {
+    return this.genericWebClient.patch(obj, ctx);
+  }
+
+  delete(id: ID, ctx?: any): Promise<number> {
+    return this.genericWebClient.delete(id, ctx);
   }
 }
 
-export class ViewSearchDiffApprWebClient<T, ID, R, S extends SearchModel> extends ViewSearchWebClient<T, ID, S> {
-  constructor(serviceUrl: string, http: HttpRequest, model: Metadata, metaModel?: MetaModel) {
-    super(serviceUrl, http, model, metaModel);
-    this.diffWebClient = new DiffApprWebClient(serviceUrl, http, null, this._metamodel);
+export class ViewSearchDiffApprWebClient<T, ID, S extends SearchModel> extends ViewSearchWebClient<T, ID, S> {
+  constructor(serviceUrl: string, http: HttpRequest, model: Metadata, metamodel?: MetaModel, searchGet?: boolean) {
+    super(serviceUrl, http, model, metamodel, searchGet);
+    this.diffWebClient = new DiffApprWebClient(serviceUrl, http, model, this._metamodel, this.keys());
     this.diff = this.diff.bind(this);
     this.approve = this.approve.bind(this);
     this.reject = this.reject.bind(this);
@@ -545,10 +647,11 @@ export class ViewSearchDiffApprWebClient<T, ID, R, S extends SearchModel> extend
   }
 }
 
+
 export class GenericSearchDiffApprWebClient<T, ID, R, S extends SearchModel> extends GenericSearchWebClient<T, ID, R, S> {
-  constructor(serviceUrl: string, http: HttpRequest, model: Metadata, metaModel?: MetaModel) {
-    super(serviceUrl, http, model, metaModel);
-    this.diffWebClient = new DiffApprWebClient(serviceUrl, http, null, this._metamodel);
+  constructor(serviceUrl: string, http: HttpRequest, model: Metadata, metamodel?: MetaModel, searchGet?: boolean) {
+    super(serviceUrl, http, model);
+    this.diffWebClient = new DiffApprWebClient(serviceUrl, http, model, this._metamodel, this.keys());
     this.diff = this.diff.bind(this);
     this.approve = this.approve.bind(this);
     this.reject = this.reject.bind(this);
