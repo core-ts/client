@@ -101,10 +101,10 @@ export function keys(model: Metadata): string[] {
   return pks;
 }
 
-const _datereg = '/Date(';
-const _re = /-?\d+/;
+const _rd = '/Date(';
+const _rn = /-?\d+/;
 
-function jsonToDate(obj, fields: string[]) {
+function jsonToDate(obj: any, fields: string[]) {
   if (!obj || !fields) {
     return obj;
   }
@@ -127,9 +127,9 @@ function toDate(v: any): Date {
   } else if (typeof v === 'number') {
     return new Date(v);
   }
-  const i = v.indexOf(_datereg);
+  const i = v.indexOf(_rd);
   if (i >= 0) {
-    const m = _re.exec(v);
+    const m = _rn.exec(v);
     const d = parseInt(m[0], null);
     return new Date(d);
   } else {

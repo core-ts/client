@@ -37,12 +37,16 @@ export class GenericWebClient<T, ID, R> extends ViewWebClient<T, ID> {
       const res = await this.http.put<R>(url, obj);
       return this.formatResultInfo(res, ctx);
     } catch (err) {
-      if (err && err.status === 404) {
-        const x: any = 0;
-        return x;
-      } else {
-        throw err;
+      if (err) {
+        if (err.status === 404 || err.status === 410) {
+          const x: any = 0;
+          return x;
+        } else if (err.status === 409) {
+          const x: any = -1;
+          return x;
+        }
       }
+      throw err;
     }
   }
 
@@ -58,12 +62,16 @@ export class GenericWebClient<T, ID, R> extends ViewWebClient<T, ID> {
       const res = await this.http.patch<R>(url, obj);
       return this.formatResultInfo(res, ctx);
     } catch (err) {
-      if (err && err.status === 404) {
-        const x: any = 0;
-        return x;
-      } else {
-        throw err;
+      if (err) {
+        if (err.status === 404 || err.status === 410) {
+          const x: any = 0;
+          return x;
+        } else if (err.status === 409) {
+          const x: any = -1;
+          return x;
+        }
       }
+      throw err;
     }
   }
 
@@ -82,7 +90,7 @@ export class GenericWebClient<T, ID, R> extends ViewWebClient<T, ID> {
       const res = await this.http.delete<number>(url);
       return res;
     } catch (err) {
-      if (err && err.status === 404) {
+      if (err && (err.status === 404 || err.status === 410)) {
         return 0;
       } else {
         throw err;

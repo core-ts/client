@@ -33,11 +33,14 @@ export class ApprWebClient<ID> {
       const res = await this.http.get<Status>(url);
       return res;
     } catch (err) {
-      if (err && err.status === 404) {
-        return Status.NotFound;
-      } else {
-        return Status.Error;
+      if (err) {
+        if (err.status === 404 || err.status === 410) {
+          return Status.NotFound;
+        } else if (err.status === 409) {
+          return Status.VersionError;
+        }
       }
+      return Status.Error;
     }
   }
   async reject(id: ID): Promise<Status> {
@@ -53,11 +56,14 @@ export class ApprWebClient<ID> {
       const res = await this.http.get<Status>(url);
       return res;
     } catch (err) {
-      if (err && err.status === 404) {
-        return Status.NotFound;
-      } else {
-        return Status.Error;
+      if (err) {
+        if (err.status === 404 || err.status === 410) {
+          return Status.NotFound;
+        } else if (err.status === 409) {
+          return Status.VersionError;
+        }
       }
+      return Status.Error;
     }
   }
 }
