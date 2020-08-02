@@ -89,7 +89,7 @@ export function build(model: Metadata): MetaModel {
   return metadata;
 }
 
-export function keys(model: Metadata): string[] {
+export function buildKeys(model: Metadata): string[] {
   const ids: string[] = Object.keys(model.attributes);
   const pks: string[] = [];
   for (const key of ids) {

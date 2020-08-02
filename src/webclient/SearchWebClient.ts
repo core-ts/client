@@ -3,7 +3,7 @@ import {SearchModel} from '../model/SearchModel';
 import {SearchResult} from '../model/SearchResult';
 import {param} from '../util/param';
 import {fromCsv, optimizeSearchModel} from '../util/search';
-import {build, json, jsonArray, Metadata, MetaModel} from './json';
+import {build, jsonArray, Metadata, MetaModel} from './json';
 
 export class SearchWebClient<T, S extends SearchModel> {
   constructor(protected serviceUrl: string, protected http: HttpRequest, model: Metadata, metaModel?: MetaModel, protected searchGet?: boolean) {
@@ -67,7 +67,6 @@ export class SearchWebClient<T, S extends SearchModel> {
     }
   }
 }
-
 export function buildSearchResult<T, S extends SearchModel>(s: S, res: string|SearchResult<T>|T[], metamodel: MetaModel): SearchResult<T>|Promise<SearchResult<T>> {
   if (typeof res === 'string') {
     return fromCsv<T>(s, res);
@@ -83,7 +82,6 @@ export function buildSearchResult<T, S extends SearchModel>(s: S, res: string|Se
     }
   }
 }
-
 export function jsonSearchResult<T>(r: SearchResult<T>, metamodel: MetaModel): SearchResult<T> {
   if (r != null && r.results != null && r.results.length > 0) {
     jsonArray(r.results, metamodel);

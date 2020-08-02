@@ -1,5 +1,5 @@
 import {HttpRequest} from '../http/HttpRequest';
-import {keys, Metadata} from './json';
+import {buildKeys, Metadata, MetaModel} from './json';
 
 export enum Status {
   NotFound = 0,
@@ -7,13 +7,20 @@ export enum Status {
   VersionError = 2,
   Error = 4
 }
-
 export class ApprWebClient<ID> {
-  constructor(protected serviceUrl: string, protected http: HttpRequest, protected model: Metadata, _keys?: string[]) {
+  constructor(protected serviceUrl: string, protected http: HttpRequest, protected model: Metadata, metaModel?: MetaModel, _ids?: string[]) {
     this.approve = this.approve.bind(this);
     this.reject = this.reject.bind(this);
     this.keys = this.keys.bind(this);
-    this._keys = (_keys ? _keys : keys(model));
+    if (metaModel) {
+      this._keys = metaModel.keys;
+    } else if (_ids) {
+      this._keys = _ids;
+    } else if (model) {
+      this._keys = buildKeys(model);
+    } else {
+      this._keys = [];
+    }
   }
   protected _keys: string[];
   keys(): string[] {
@@ -21,15 +28,15 @@ export class ApprWebClient<ID> {
   }
 
   async approve(id: ID): Promise<Status> {
-    let url = this.serviceUrl + '/' + id + '/approve';
-    if (this._keys && this._keys.length > 0 && typeof id === 'object') {
-      url = this.serviceUrl;
-      for (const name of this._keys) {
-        url = url + '/' + id[name];
-      }
-      url = url + '/approve';
-    }
     try {
+      let url = this.serviceUrl + '/' + id + '/approve';
+      if (this._keys && this._keys.length > 0 && typeof id === 'object') {
+        url = this.serviceUrl;
+        for (const name of this._keys) {
+          url = url + '/' + id[name];
+        }
+        url = url + '/approve';
+      }
       const res = await this.http.get<Status>(url);
       return res;
     } catch (err) {
@@ -44,15 +51,15 @@ export class ApprWebClient<ID> {
     }
   }
   async reject(id: ID): Promise<Status> {
-    let url = this.serviceUrl + '/' + id + '/reject';
-    if (this._keys && this._keys.length > 0 && typeof id === 'object') {
-      url = this.serviceUrl;
-      for (const name of this._keys) {
-        url = url + '/' + id[name];
-      }
-      url = url + '/reject';
-    }
     try {
+      let url = this.serviceUrl + '/' + id + '/reject';
+      if (this._keys && this._keys.length > 0 && typeof id === 'object') {
+        url = this.serviceUrl;
+        for (const name of this._keys) {
+          url = url + '/' + id[name];
+        }
+        url = url + '/reject';
+      }
       const res = await this.http.get<Status>(url);
       return res;
     } catch (err) {

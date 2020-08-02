@@ -3,9 +3,9 @@ import {SearchResult} from '../model/SearchResult';
 import {fromString} from './csv';
 
 export function optimizeSearchModel<S extends SearchModel>(s: S): S {
-  const keys = Object.keys(s);
+  const ks = Object.keys(s);
   const o: any = {};
-  for (const key of keys) {
+  for (const key of ks) {
     const p = s[key];
     if (key === 'page') {
       if (p && p >= 1) {
@@ -41,7 +41,6 @@ export function optimizeSearchModel<S extends SearchModel>(s: S): S {
   }
   return o;
 }
-
 export async function fromCsv<T>(m: SearchModel, csv: string): Promise<SearchResult<T>> {
   const items = await fromString(csv);
   const arr = [];

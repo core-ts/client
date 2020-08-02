@@ -1,6 +1,5 @@
 import {HttpRequest} from '../http/HttpRequest';
 import {SearchModel} from '../model/SearchModel';
-import {SearchResult} from '../model/SearchResult';
 import {GenericWebClient} from './GenericWebClient';
 import {Metadata, MetaModel} from './json';
 import {SearchWebClient} from './SearchWebClient';
@@ -26,11 +25,9 @@ export class GenericSearchWebClient<T, ID, R, S extends SearchModel> extends Sea
   metadata(): Metadata {
     return this.genericWebClient.metadata();
   }
-
   all(ctx?: any): Promise<T[]> {
     return this.genericWebClient.all(ctx);
   }
-
   load(id: ID, ctx?: any): Promise<T> {
     return this.genericWebClient.load(id, ctx);
   }
@@ -38,15 +35,12 @@ export class GenericSearchWebClient<T, ID, R, S extends SearchModel> extends Sea
   insert(obj: T, ctx?: any): Promise<R> {
     return this.genericWebClient.insert(obj, ctx);
   }
-
   update(obj: T, ctx?: any): Promise<R> {
     return this.genericWebClient.update(obj, ctx);
   }
-
   patch(obj: T, ctx?: any): Promise<R> {
     return this.genericWebClient.patch(obj, ctx);
   }
-
   delete(id: ID, ctx?: any): Promise<number> {
     return this.genericWebClient.delete(id, ctx);
   }

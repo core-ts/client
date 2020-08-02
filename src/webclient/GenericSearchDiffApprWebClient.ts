@@ -9,7 +9,7 @@ import {Metadata, MetaModel} from './json';
 export class GenericSearchDiffApprWebClient<T, ID, R, S extends SearchModel> extends GenericSearchWebClient<T, ID, R, S> {
   constructor(serviceUrl: string, http: HttpRequest, model: Metadata, metamodel?: MetaModel, searchGet?: boolean) {
     super(serviceUrl, http, model);
-    this.diffWebClient = new DiffApprWebClient(serviceUrl, http, null, this.keys(), this._metamodel);
+    this.diffWebClient = new DiffApprWebClient(serviceUrl, http, model, this._metamodel, this.keys());
     this.diff = this.diff.bind(this);
     this.approve = this.approve.bind(this);
     this.reject = this.reject.bind(this);
@@ -18,11 +18,9 @@ export class GenericSearchDiffApprWebClient<T, ID, R, S extends SearchModel> ext
   async diff(id: ID): Promise<DiffModel<T, ID>> {
     return this.diffWebClient.diff(id);
   }
-
   async approve(id: ID): Promise<Status> {
     return this.diffWebClient.approve(id);
   }
-
   async reject(id: ID): Promise<Status> {
     return this.diffWebClient.reject(id);
   }

@@ -32,14 +32,21 @@ export class ViewWebClient<T, ID> {
   }
 
   async load(id: ID, ctx?: any): Promise<T> {
-    let url = this.serviceUrl + '/' + id;
-    if (this._keys && this._keys.length > 0 && typeof id === 'object') {
-      url = this.serviceUrl;
-      for (const name of this._keys) {
-        url = url + '/' + id[name];
+    try {
+      let url = this.serviceUrl + '/' + id;
+      if (this._keys && this._keys.length > 0 && typeof id === 'object') {
+        url = this.serviceUrl;
+        for (const name of this._keys) {
+          url = url + '/' + id[name];
+        }
       }
+      const obj = await this.http.get<T>(url);
+      return json(obj, this._metamodel);
+    } catch (err) {
+      if (err && (err.status === 404 || err.status === 410)) {
+        return null;
+      }
+      throw err;
     }
-    const obj = await this.http.get<T>(url);
-    return json(obj, this._metamodel);
   }
 }

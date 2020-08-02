@@ -26,14 +26,14 @@ export class GenericWebClient<T, ID, R> extends ViewWebClient<T, ID> {
   }
 
   async update(obj: T, ctx?: any): Promise<R> {
-    let url = this.serviceUrl;
-    const keys = this.keys();
-    if (keys && keys.length > 0) {
-      for (const name of keys) {
-        url += '/' + obj[name];
-      }
-    }
     try {
+      let url = this.serviceUrl;
+      const ks = this.keys();
+      if (ks && ks.length > 0) {
+        for (const name of ks) {
+          url += '/' + obj[name];
+        }
+      }
       const res = await this.http.put<R>(url, obj);
       return this.formatResultInfo(res, ctx);
     } catch (err) {
@@ -51,14 +51,14 @@ export class GenericWebClient<T, ID, R> extends ViewWebClient<T, ID> {
   }
 
   async patch(obj: T, ctx?: any): Promise<R> {
-    let url = this.serviceUrl;
-    const keys = this.keys();
-    if (keys && keys.length > 0) {
-      for (const name of keys) {
-        url += '/' + obj[name];
-      }
-    }
     try {
+      let url = this.serviceUrl;
+      const ks = this.keys();
+      if (ks && ks.length > 0) {
+        for (const name of ks) {
+          url += '/' + obj[name];
+        }
+      }
       const res = await this.http.patch<R>(url, obj);
       return this.formatResultInfo(res, ctx);
     } catch (err) {
@@ -76,17 +76,17 @@ export class GenericWebClient<T, ID, R> extends ViewWebClient<T, ID> {
   }
 
   async delete(id: ID, ctx?: any): Promise<number> {
-    let url = this.serviceUrl + '/' + id;
-    if (typeof id === 'object' && this.model) {
-      const keys = this.keys();
-      if (keys && keys.length > 0) {
-        url = this.serviceUrl;
-        for (const key of keys) {
-          url = url + '/' + id[key];
+    try {
+      let url = this.serviceUrl + '/' + id;
+      if (typeof id === 'object' && this.model) {
+        const ks = this.keys();
+        if (ks && ks.length > 0) {
+          url = this.serviceUrl;
+          for (const key of ks) {
+            url = url + '/' + id[key];
+          }
         }
       }
-    }
-    try {
       const res = await this.http.delete<number>(url);
       return res;
     } catch (err) {
