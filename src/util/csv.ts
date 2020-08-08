@@ -5,7 +5,6 @@ export interface CsvService {
 export class resource {
   static csv: CsvService;
 }
-
 export class DefaultCsvService {
   constructor(private c: any) {
     this._csv = c;
@@ -18,7 +17,6 @@ export class DefaultCsvService {
     });
   }
 }
-
 export function fromString(value: string): Promise<string[][]> {
   return resource.csv.fromString(value);
 }

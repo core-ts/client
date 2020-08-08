@@ -1,7 +1,7 @@
 export function param(obj: any): string {
-  const keys = Object.keys(obj);
+  const ks = Object.keys(obj);
   const arrs = [];
-  for (const key of keys) {
+  for (const key of ks) {
     if (key === 'fields') {
       if (Array.isArray(obj[key])) {
         const x = obj[key].join(',');

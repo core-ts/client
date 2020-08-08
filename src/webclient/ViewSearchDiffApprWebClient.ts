@@ -25,4 +25,3 @@ export class ViewSearchDiffApprWebClient<T, ID, S extends SearchModel> extends V
     return this.diffWebClient.reject(id);
   }
 }
-
