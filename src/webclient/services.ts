@@ -346,7 +346,7 @@ export class SearchWebClient<T, S extends SearchModel> {
   protected makeUrlParameters(s: S): string {
     return param(s);
   }
-  async search(s: S): Promise<SearchResult<T>> {
+  async search(s: S, ctx?: any): Promise<SearchResult<T>> {
     this.formatSearch(s);
     if (this._metamodel && s.fields && s.fields.length > 0) {
       if (this._metamodel.keys && this._metamodel.keys.length > 0) {
@@ -430,7 +430,7 @@ export class DiffWebClient<T, ID>  {
   keys(): string[] {
     return this._ids;
   }
-  async diff(id: ID): Promise<DiffModel<T, ID>> {
+  async diff(id: ID, ctx?: any): Promise<DiffModel<T, ID>> {
     try {
       let url = this.serviceUrl + '/' + id + '/diff';
       if (this._ids && this._ids.length > 0 && typeof id === 'object') {
@@ -500,7 +500,7 @@ export class ApprWebClient<ID> {
     return this._keys;
   }
 
-  async approve(id: ID): Promise<Status> {
+  async approve(id: ID, ctx?: any): Promise<Status> {
     try {
       let url = this.serviceUrl + '/' + id + '/approve';
       if (this._keys && this._keys.length > 0 && typeof id === 'object') {
@@ -524,7 +524,7 @@ export class ApprWebClient<ID> {
       return Status.Error;
     }
   }
-  async reject(id: ID): Promise<Status> {
+  async reject(id: ID, ctx?: any): Promise<Status> {
     try {
       let url = this.serviceUrl + '/' + id + '/reject';
       if (this._keys && this._keys.length > 0 && typeof id === 'object') {
@@ -559,10 +559,10 @@ export class DiffApprWebClient<T, ID> extends DiffWebClient<T, ID> {
   }
   private apprWebClient: ApprWebClient<ID>;
   approve(id: ID, ctx?: any): Promise<Status> {
-    return this.apprWebClient.approve(id);
+    return this.apprWebClient.approve(id, ctx);
   }
   reject(id: ID, ctx?: any): Promise<Status> {
-    return this.apprWebClient.reject(id);
+    return this.apprWebClient.reject(id, ctx);
   }
 }
 
@@ -644,33 +644,33 @@ export class ViewSearchDiffApprWebClient<T, ID, S extends SearchModel> extends V
     this.reject = this.reject.bind(this);
   }
   private diffWebClient: DiffApprWebClient<T, ID>;
-  async diff(id: ID): Promise<DiffModel<T, ID>> {
-    return this.diffWebClient.diff(id);
+  async diff(id: ID, ctx?: any): Promise<DiffModel<T, ID>> {
+    return this.diffWebClient.diff(id, ctx);
   }
-  async approve(id: ID): Promise<Status> {
-    return this.diffWebClient.approve(id);
+  async approve(id: ID, ctx?: any): Promise<Status> {
+    return this.diffWebClient.approve(id, ctx);
   }
-  async reject(id: ID): Promise<Status> {
-    return this.diffWebClient.reject(id);
+  async reject(id: ID, ctx?: any): Promise<Status> {
+    return this.diffWebClient.reject(id, ctx);
   }
 }
 
 export class GenericSearchDiffApprWebClient<T, ID, R, S extends SearchModel> extends GenericSearchWebClient<T, ID, R, S> {
   constructor(serviceUrl: string, http: HttpRequest, model: Metadata, metamodel?: MetaModel, searchGet?: boolean) {
-    super(serviceUrl, http, model);
+    super(serviceUrl, http, model, metamodel, searchGet);
     this.diffWebClient = new DiffApprWebClient(serviceUrl, http, model, this._metamodel, this.keys());
     this.diff = this.diff.bind(this);
     this.approve = this.approve.bind(this);
     this.reject = this.reject.bind(this);
   }
   private diffWebClient: DiffApprWebClient<T, ID>;
-  async diff(id: ID): Promise<DiffModel<T, ID>> {
-    return this.diffWebClient.diff(id);
+  async diff(id: ID, ctx?: any): Promise<DiffModel<T, ID>> {
+    return this.diffWebClient.diff(id, ctx);
   }
-  async approve(id: ID): Promise<Status> {
-    return this.diffWebClient.approve(id);
+  async approve(id: ID, ctx?: any): Promise<Status> {
+    return this.diffWebClient.approve(id, ctx);
   }
-  async reject(id: ID): Promise<Status> {
-    return this.diffWebClient.reject(id);
+  async reject(id: ID, ctx?: any): Promise<Status> {
+    return this.diffWebClient.reject(id, ctx);
   }
 }
