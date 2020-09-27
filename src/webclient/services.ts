@@ -209,7 +209,8 @@ export class ViewWebClient<T, ID> {
       const obj = await this.http.get<T>(url);
       return json(obj, this._metamodel);
     } catch (err) {
-      if (err && (err.status === 404 || err.status === 410)) {
+      const data = (err &&  err.response) ? err.response : err;
+      if (data && (data.status === 404 || data.status === 410)) {
         return null;
       }
       throw err;
@@ -253,10 +254,11 @@ export class GenericWebClient<T, ID, R> extends ViewWebClient<T, ID> {
       return this.formatResultInfo(res, ctx);
     } catch (err) {
       if (err) {
-        if (err.status === 404 || err.status === 410) {
+        const data = (err &&  err.response) ? err.response : err;
+        if (data.status === 404 || data.status === 410) {
           const x: any = 0;
           return x;
-        } else if (err.status === 409) {
+        } else if (data.status === 409) {
           const x: any = -1;
           return x;
         }
@@ -278,10 +280,11 @@ export class GenericWebClient<T, ID, R> extends ViewWebClient<T, ID> {
       return this.formatResultInfo(res, ctx);
     } catch (err) {
       if (err) {
-        if (err.status === 404 || err.status === 410) {
+        const data = (err &&  err.response) ? err.response : err;
+        if (data.status === 404 || data.status === 410) {
           const x: any = 0;
           return x;
-        } else if (err.status === 409) {
+        } else if (data.status === 409) {
           const x: any = -1;
           return x;
         }
@@ -305,11 +308,15 @@ export class GenericWebClient<T, ID, R> extends ViewWebClient<T, ID> {
       const res = await this.http.delete<number>(url);
       return res;
     } catch (err) {
-      if (err && (err.status === 404 || err.status === 410)) {
-        return 0;
-      } else {
-        throw err;
+      if (err) {
+        const data = (err &&  err.response) ? err.response : err;
+        if (data && (data.status === 404 || data.status === 410)) {
+          return 0;
+        } else if (data.status === 409) {
+          return -1;
+        }
       }
+      throw err;
     }
   }
 }
@@ -457,7 +464,8 @@ export class DiffWebClient<T, ID>  {
       }
       return res;
     } catch (err) {
-      if (err && err.status === 404) {
+      const data = (err &&  err.response) ? err.response : err;
+      if (data && (data.status === 404 || data.status === 410)) {
         return null;
       } else {
         throw err;
@@ -506,9 +514,10 @@ export class ApprWebClient<ID> {
       return res;
     } catch (err) {
       if (err) {
-        if (err.status === 404 || err.status === 410) {
+        const data = (err &&  err.response) ? err.response : err;
+        if (data.status === 404 || data.status === 410) {
           return Status.NotFound;
-        } else if (err.status === 409) {
+        } else if (data.status === 409) {
           return Status.VersionError;
         }
       }
@@ -529,9 +538,10 @@ export class ApprWebClient<ID> {
       return res;
     } catch (err) {
       if (err) {
-        if (err.status === 404 || err.status === 410) {
+        const data = (err &&  err.response) ? err.response : err;
+        if (data.status === 404 || data.status === 410) {
           return Status.NotFound;
-        } else if (err.status === 409) {
+        } else if (data.status === 409) {
           return Status.VersionError;
         }
       }
