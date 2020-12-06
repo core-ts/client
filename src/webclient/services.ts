@@ -89,7 +89,7 @@ export interface CsvService {
 }
 // tslint:disable-next-line:class-name
 export class resource {
-  static csv: CsvService;
+  static csv: CsvService = null;
 }
 export class DefaultCsvService {
   constructor(private c: any) {
@@ -168,7 +168,7 @@ export async function fromCsv<T>(m: SearchModel, csv: string): Promise<SearchRes
 
 
 export class ViewWebClient<T, ID> {
-  constructor(protected serviceUrl: string, protected http: HttpRequest, protected model?: Metadata, metamodel?: MetaModel) {
+  constructor(protected serviceUrl: string, protected http: HttpRequest, pmodel?: Metadata|string[], metamodel?: MetaModel) {
     this.metadata = this.metadata.bind(this);
     this.keys = this.keys.bind(this);
     this.all = this.all.bind(this);
@@ -177,14 +177,22 @@ export class ViewWebClient<T, ID> {
       this._metamodel = metamodel;
       this._keys = metamodel.keys;
     } else {
-      if (model) {
-        const m = build(this.model);
-        this._metamodel = m;
-        this._keys = m.keys;
+      if (pmodel) {
+        if (Array.isArray(pmodel)) {
+          this._keys = pmodel;
+        } else {
+          this.model = pmodel;
+          const m = build(pmodel);
+          this._metamodel = m;
+          this._keys = m.keys;
+        }
+      } else {
+        this._keys = [];
       }
     }
   }
   private _keys: string[] = [];
+  protected model: Metadata;
   protected _metamodel: MetaModel;
 
   keys(): string[] {
@@ -227,8 +235,8 @@ export class ViewWebClient<T, ID> {
 }
 
 export class GenericWebClient<T, ID, R> extends ViewWebClient<T, ID> {
-  constructor(serviceUrl: string, http: HttpRequest, model?: Metadata, metamodel?: MetaModel) {
-    super(serviceUrl, http, model, metamodel);
+  constructor(serviceUrl: string, http: HttpRequest, pmodel?: Metadata|string[], metamodel?: MetaModel) {
+    super(serviceUrl, http, pmodel, metamodel);
     this.formatResultInfo = this.formatResultInfo.bind(this);
     this.insert = this.insert.bind(this);
     this.update = this.update.bind(this);
@@ -341,7 +349,7 @@ export class GenericWebClient<T, ID, R> extends ViewWebClient<T, ID> {
 }
 
 export class SearchWebClient<T, S extends SearchModel> {
-  constructor(protected serviceUrl: string, protected http: HttpRequest, model?: Metadata, metaModel?: MetaModel, protected searchGet?: boolean) {
+  constructor(protected serviceUrl: string, protected http: HttpRequest, pmodel?: Metadata|string[], metaModel?: MetaModel, protected searchGet?: boolean) {
     this.formatSearch = this.formatSearch.bind(this);
     this.makeUrlParameters = this.makeUrlParameters.bind(this);
     this.postOnly = this.postOnly.bind(this);
@@ -349,12 +357,18 @@ export class SearchWebClient<T, S extends SearchModel> {
     if (metaModel) {
       this._metamodel = metaModel;
     } else {
-      if (model) {
-        const metaModel2 = build(model);
-        this._metamodel = metaModel2;
+      if (pmodel) {
+        if (Array.isArray(pmodel)) {
+          this._keys = pmodel;
+        } else {
+          const m = build(pmodel);
+          this._metamodel = m;
+          this._keys = m.keys;
+        }
       }
     }
   }
+  protected _keys: string[] = [];
   protected _metamodel: MetaModel;
 
   protected postOnly(s: S): boolean {
@@ -369,9 +383,9 @@ export class SearchWebClient<T, S extends SearchModel> {
   }
   async search(s: S, ctx?: any): Promise<SearchResult<T>> {
     this.formatSearch(s);
-    if (this._metamodel && s.fields && s.fields.length > 0) {
-      if (this._metamodel.keys && this._metamodel.keys.length > 0) {
-        for (const key of this._metamodel.keys) {
+    if (s.fields && s.fields.length > 0) {
+      if (this._keys && this._keys.length > 0) {
+        for (const key of this._keys) {
           if (s.fields.indexOf(key) < 0) {
             s.fields.push(key);
           }
@@ -438,20 +452,28 @@ export interface DiffModel<T, ID> {
   value: T;
 }
 export class DiffWebClient<T, ID>  {
-  constructor(protected serviceUrl: string, protected http: HttpRequest, protected metadata?: Metadata, metaModel?: MetaModel, _keys?: string[]) {
+  constructor(protected serviceUrl: string, protected http: HttpRequest, pmodel?: Metadata|string[], metaModel?: MetaModel) {
     this.diff = this.diff.bind(this);
     if (metaModel) {
       this._metaModel = metaModel;
       this._ids = metaModel.keys;
-    } else if (metadata) {
-      this._metaModel = build(metadata);
-      this._ids = this._metaModel.keys;
-    }
-    if (!this._ids && _keys) {
-      this._ids = _keys;
+    } else {
+      if (pmodel) {
+        if (Array.isArray(pmodel)) {
+          this._ids = pmodel;
+        } else {
+          this.model = pmodel;
+          const m = build(pmodel);
+          this._metaModel = m;
+          this._ids = m.keys;
+        }
+      } else {
+        this._ids = [];
+      }
     }
   }
   protected _ids: string[];
+  protected model?: Metadata;
   protected _metaModel: MetaModel;
   keys(): string[] {
     return this._ids;
@@ -507,21 +529,28 @@ export enum Status {
   Error = 4
 }
 export class ApprWebClient<ID> {
-  constructor(protected serviceUrl: string, protected http: HttpRequest, protected model?: Metadata, metaModel?: MetaModel, _ids?: string[]) {
+  constructor(protected serviceUrl: string, protected http: HttpRequest, pmodel?: Metadata|string[], metaModel?: MetaModel) {
     this.approve = this.approve.bind(this);
     this.reject = this.reject.bind(this);
     this.keys = this.keys.bind(this);
     if (metaModel) {
       this._keys = metaModel.keys;
-    } else if (_ids) {
-      this._keys = _ids;
-    } else if (model) {
-      this._keys = buildKeys(model);
     } else {
-      this._keys = [];
+      if (pmodel) {
+        if (Array.isArray(pmodel)) {
+          this._keys = pmodel;
+        } else {
+          this.model = pmodel;
+          const m = build(pmodel);
+          this._keys = m.keys;
+        }
+      } else {
+        this._keys = [];
+      }
     }
   }
   protected _keys: string[];
+  protected model?: Metadata;
   keys(): string[] {
     return this._keys;
   }
@@ -577,9 +606,9 @@ export class ApprWebClient<ID> {
 }
 
 export class DiffApprWebClient<T, ID> extends DiffWebClient<T, ID> {
-  constructor(protected serviceUrl: string, protected http: HttpRequest, protected model?: Metadata, metaModel?: MetaModel, keys?: string[]) {
-    super(serviceUrl, http, model, metaModel, keys);
-    this.apprWebClient = new ApprWebClient(serviceUrl, http, model, this._metaModel, this._ids);
+  constructor(protected serviceUrl: string, protected http: HttpRequest, model?: Metadata|string[], metaModel?: MetaModel) {
+    super(serviceUrl, http, model, metaModel);
+    this.apprWebClient = new ApprWebClient(serviceUrl, http, model, this._metaModel);
     this.approve = this.approve.bind(this);
     this.reject = this.reject.bind(this);
   }
@@ -593,7 +622,7 @@ export class DiffApprWebClient<T, ID> extends DiffWebClient<T, ID> {
 }
 
 export class ViewSearchWebClient<T, ID, S extends SearchModel> extends SearchWebClient<T, S> {
-  constructor(serviceUrl: string, http: HttpRequest, model?: Metadata, metamodel?: MetaModel, searchGet?: boolean) {
+  constructor(serviceUrl: string, http: HttpRequest, model?: Metadata|string[], metamodel?: MetaModel, searchGet?: boolean) {
     super(serviceUrl, http, model, metamodel, searchGet);
     this.viewWebClient = new ViewWebClient<T, ID>(serviceUrl, http, model, this._metamodel);
     this.metadata = this.metadata.bind(this);
@@ -662,9 +691,9 @@ export class GenericSearchWebClient<T, ID, R, S extends SearchModel> extends Sea
 }
 
 export class ViewSearchDiffApprWebClient<T, ID, S extends SearchModel> extends ViewSearchWebClient<T, ID, S> {
-  constructor(serviceUrl: string, http: HttpRequest, model?: Metadata, metamodel?: MetaModel, searchGet?: boolean) {
+  constructor(serviceUrl: string, http: HttpRequest, model?: Metadata|string[], metamodel?: MetaModel, searchGet?: boolean) {
     super(serviceUrl, http, model, metamodel, searchGet);
-    this.diffWebClient = new DiffApprWebClient(serviceUrl, http, model, this._metamodel, this.keys());
+    this.diffWebClient = new DiffApprWebClient(serviceUrl, http, model, this._metamodel);
     this.diff = this.diff.bind(this);
     this.approve = this.approve.bind(this);
     this.reject = this.reject.bind(this);
@@ -684,7 +713,7 @@ export class ViewSearchDiffApprWebClient<T, ID, S extends SearchModel> extends V
 export class GenericSearchDiffApprWebClient<T, ID, R, S extends SearchModel> extends GenericSearchWebClient<T, ID, R, S> {
   constructor(serviceUrl: string, http: HttpRequest, model?: Metadata, metamodel?: MetaModel, searchGet?: boolean) {
     super(serviceUrl, http, model, metamodel, searchGet);
-    this.diffWebClient = new DiffApprWebClient(serviceUrl, http, model, this._metamodel, this.keys());
+    this.diffWebClient = new DiffApprWebClient(serviceUrl, http, model, this._metamodel);
     this.diff = this.diff.bind(this);
     this.approve = this.approve.bind(this);
     this.reject = this.reject.bind(this);
