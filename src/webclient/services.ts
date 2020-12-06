@@ -168,7 +168,7 @@ export async function fromCsv<T>(m: SearchModel, csv: string): Promise<SearchRes
 
 
 export class ViewWebClient<T, ID> {
-  constructor(protected serviceUrl: string, protected http: HttpRequest, protected model: Metadata, metamodel?: MetaModel) {
+  constructor(protected serviceUrl: string, protected http: HttpRequest, protected model?: Metadata, metamodel?: MetaModel) {
     this.metadata = this.metadata.bind(this);
     this.keys = this.keys.bind(this);
     this.all = this.all.bind(this);
@@ -177,9 +177,11 @@ export class ViewWebClient<T, ID> {
       this._metamodel = metamodel;
       this._keys = metamodel.keys;
     } else {
-      const m = build(this.model);
-      this._metamodel = m;
-      this._keys = m.keys;
+      if (model) {
+        const m = build(this.model);
+        this._metamodel = m;
+        this._keys = m.keys;
+      }
     }
   }
   private _keys: string[] = [];
@@ -194,6 +196,9 @@ export class ViewWebClient<T, ID> {
 
   async all(ctx?: any): Promise<T[]> {
     const list = await this.http.get<T[]>(this.serviceUrl);
+    if (!this._metamodel) {
+      return list;
+    }
     return jsonArray(list, this._metamodel);
   }
 
@@ -207,6 +212,9 @@ export class ViewWebClient<T, ID> {
         }
       }
       const obj = await this.http.get<T>(url);
+      if (!this._metamodel) {
+        return obj;
+      }
       return json(obj, this._metamodel);
     } catch (err) {
       const data = (err &&  err.response) ? err.response : err;
@@ -219,7 +227,7 @@ export class ViewWebClient<T, ID> {
 }
 
 export class GenericWebClient<T, ID, R> extends ViewWebClient<T, ID> {
-  constructor(serviceUrl: string, http: HttpRequest, model: Metadata, metamodel?: MetaModel) {
+  constructor(serviceUrl: string, http: HttpRequest, model?: Metadata, metamodel?: MetaModel) {
     super(serviceUrl, http, model, metamodel);
     this.formatResultInfo = this.formatResultInfo.bind(this);
     this.insert = this.insert.bind(this);
@@ -229,15 +237,20 @@ export class GenericWebClient<T, ID, R> extends ViewWebClient<T, ID> {
   }
 
   protected formatResultInfo(result: any, ctx?: any): any {
-    if (result && typeof result === 'object' && result.status === 1 && result.value && typeof result.value === 'object') {
+    if (this._metamodel && result && typeof result === 'object' && result.status === 1 && result.value && typeof result.value === 'object') {
       result.value = json(result.value, this._metamodel);
     }
     return result;
   }
 
   async insert(obj: T, ctx?: any): Promise<R> {
-    json(obj, this._metamodel);
+    if (this._metamodel) {
+      json(obj, this._metamodel);
+    }
     const res = await this.http.post<R>(this.serviceUrl, obj);
+    if (!this._metamodel) {
+      return res;
+    }
     return this.formatResultInfo(res, ctx);
   }
 
@@ -251,6 +264,9 @@ export class GenericWebClient<T, ID, R> extends ViewWebClient<T, ID> {
         }
       }
       const res = await this.http.put<R>(url, obj);
+      if (!this._metamodel) {
+        return res;
+      }
       return this.formatResultInfo(res, ctx);
     } catch (err) {
       if (err) {
@@ -277,6 +293,9 @@ export class GenericWebClient<T, ID, R> extends ViewWebClient<T, ID> {
         }
       }
       const res = await this.http.patch<R>(url, obj);
+      if (!this._metamodel) {
+        return res;
+      }
       return this.formatResultInfo(res, ctx);
     } catch (err) {
       if (err) {
@@ -296,7 +315,7 @@ export class GenericWebClient<T, ID, R> extends ViewWebClient<T, ID> {
   async delete(id: ID, ctx?: any): Promise<number> {
     try {
       let url = this.serviceUrl + '/' + id;
-      if (typeof id === 'object' && this.model) {
+      if (typeof id === 'object' && this.model && this.keys) {
         const ks = this.keys();
         if (ks && ks.length > 0) {
           url = this.serviceUrl;
@@ -322,7 +341,7 @@ export class GenericWebClient<T, ID, R> extends ViewWebClient<T, ID> {
 }
 
 export class SearchWebClient<T, S extends SearchModel> {
-  constructor(protected serviceUrl: string, protected http: HttpRequest, model: Metadata, metaModel?: MetaModel, protected searchGet?: boolean) {
+  constructor(protected serviceUrl: string, protected http: HttpRequest, model?: Metadata, metaModel?: MetaModel, protected searchGet?: boolean) {
     this.formatSearch = this.formatSearch.bind(this);
     this.makeUrlParameters = this.makeUrlParameters.bind(this);
     this.postOnly = this.postOnly.bind(this);
@@ -330,8 +349,10 @@ export class SearchWebClient<T, S extends SearchModel> {
     if (metaModel) {
       this._metamodel = metaModel;
     } else {
-      const metaModel2 = build(model);
-      this._metamodel = metaModel2;
+      if (model) {
+        const metaModel2 = build(model);
+        this._metamodel = metaModel2;
+      }
     }
   }
   protected _metamodel: MetaModel;
@@ -383,7 +404,7 @@ export class SearchWebClient<T, S extends SearchModel> {
     }
   }
 }
-export function buildSearchResult<T, S extends SearchModel>(s: S, res: string|SearchResult<T>|T[], metamodel: MetaModel): SearchResult<T>|Promise<SearchResult<T>> {
+export function buildSearchResult<T, S extends SearchModel>(s: S, res: string|SearchResult<T>|T[], metamodel?: MetaModel): SearchResult<T>|Promise<SearchResult<T>> {
   if (typeof res === 'string') {
     return fromCsv<T>(s, res);
   } else {
@@ -392,19 +413,24 @@ export function buildSearchResult<T, S extends SearchModel>(s: S, res: string|Se
         results: res,
         total: res.length
       };
+      if (!metamodel) {
+        return result;
+      }
       return jsonSearchResult(result, metamodel);
     } else {
+      if (!metamodel) {
+        return res;
+      }
       return jsonSearchResult(res, metamodel);
     }
   }
 }
 export function jsonSearchResult<T>(r: SearchResult<T>, metamodel: MetaModel): SearchResult<T> {
-  if (r != null && r.results != null && r.results.length > 0) {
+  if (metamodel && r != null && r.results != null && r.results.length > 0) {
     jsonArray(r.results, metamodel);
   }
   return r;
 }
-
 
 export interface DiffModel<T, ID> {
   id?: ID;
@@ -412,7 +438,7 @@ export interface DiffModel<T, ID> {
   value: T;
 }
 export class DiffWebClient<T, ID>  {
-  constructor(protected serviceUrl: string, protected http: HttpRequest, protected metadata: Metadata, metaModel?: MetaModel, _keys?: string[]) {
+  constructor(protected serviceUrl: string, protected http: HttpRequest, protected metadata?: Metadata, metaModel?: MetaModel, _keys?: string[]) {
     this.diff = this.diff.bind(this);
     if (metaModel) {
       this._metaModel = metaModel;
@@ -481,7 +507,7 @@ export enum Status {
   Error = 4
 }
 export class ApprWebClient<ID> {
-  constructor(protected serviceUrl: string, protected http: HttpRequest, protected model: Metadata, metaModel?: MetaModel, _ids?: string[]) {
+  constructor(protected serviceUrl: string, protected http: HttpRequest, protected model?: Metadata, metaModel?: MetaModel, _ids?: string[]) {
     this.approve = this.approve.bind(this);
     this.reject = this.reject.bind(this);
     this.keys = this.keys.bind(this);
@@ -551,7 +577,7 @@ export class ApprWebClient<ID> {
 }
 
 export class DiffApprWebClient<T, ID> extends DiffWebClient<T, ID> {
-  constructor(protected serviceUrl: string, protected http: HttpRequest, protected model: Metadata, metaModel?: MetaModel, keys?: string[]) {
+  constructor(protected serviceUrl: string, protected http: HttpRequest, protected model?: Metadata, metaModel?: MetaModel, keys?: string[]) {
     super(serviceUrl, http, model, metaModel, keys);
     this.apprWebClient = new ApprWebClient(serviceUrl, http, model, this._metaModel, this._ids);
     this.approve = this.approve.bind(this);
@@ -567,7 +593,7 @@ export class DiffApprWebClient<T, ID> extends DiffWebClient<T, ID> {
 }
 
 export class ViewSearchWebClient<T, ID, S extends SearchModel> extends SearchWebClient<T, S> {
-  constructor(serviceUrl: string, http: HttpRequest, model: Metadata, metamodel?: MetaModel, searchGet?: boolean) {
+  constructor(serviceUrl: string, http: HttpRequest, model?: Metadata, metamodel?: MetaModel, searchGet?: boolean) {
     super(serviceUrl, http, model, metamodel, searchGet);
     this.viewWebClient = new ViewWebClient<T, ID>(serviceUrl, http, model, this._metamodel);
     this.metadata = this.metadata.bind(this);
@@ -594,7 +620,7 @@ export class ViewSearchWebClient<T, ID, S extends SearchModel> extends SearchWeb
 }
 
 export class GenericSearchWebClient<T, ID, R, S extends SearchModel> extends SearchWebClient<T, S> {
-  constructor(serviceUrl: string, http: HttpRequest, model: Metadata, metamodel?: MetaModel, searchGet?: boolean) {
+  constructor(serviceUrl: string, http: HttpRequest, model?: Metadata, metamodel?: MetaModel, searchGet?: boolean) {
     super(serviceUrl, http, model, metamodel, searchGet);
     this.genericWebClient = new GenericWebClient<T, ID, R>(serviceUrl, http, model, this._metamodel);
     this.metadata = this.metadata.bind(this);
@@ -636,7 +662,7 @@ export class GenericSearchWebClient<T, ID, R, S extends SearchModel> extends Sea
 }
 
 export class ViewSearchDiffApprWebClient<T, ID, S extends SearchModel> extends ViewSearchWebClient<T, ID, S> {
-  constructor(serviceUrl: string, http: HttpRequest, model: Metadata, metamodel?: MetaModel, searchGet?: boolean) {
+  constructor(serviceUrl: string, http: HttpRequest, model?: Metadata, metamodel?: MetaModel, searchGet?: boolean) {
     super(serviceUrl, http, model, metamodel, searchGet);
     this.diffWebClient = new DiffApprWebClient(serviceUrl, http, model, this._metamodel, this.keys());
     this.diff = this.diff.bind(this);
@@ -656,7 +682,7 @@ export class ViewSearchDiffApprWebClient<T, ID, S extends SearchModel> extends V
 }
 
 export class GenericSearchDiffApprWebClient<T, ID, R, S extends SearchModel> extends GenericSearchWebClient<T, ID, R, S> {
-  constructor(serviceUrl: string, http: HttpRequest, model: Metadata, metamodel?: MetaModel, searchGet?: boolean) {
+  constructor(serviceUrl: string, http: HttpRequest, model?: Metadata, metamodel?: MetaModel, searchGet?: boolean) {
     super(serviceUrl, http, model, metamodel, searchGet);
     this.diffWebClient = new DiffApprWebClient(serviceUrl, http, model, this._metamodel, this.keys());
     this.diff = this.diff.bind(this);

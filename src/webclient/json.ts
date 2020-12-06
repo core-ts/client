@@ -154,7 +154,10 @@ function toDate(v: any): Date {
   }
 }
 
-export function json(obj: any, meta: MetaModel): any {
+export function json(obj: any, meta?: MetaModel): any {
+  if (!meta) {
+    return obj;
+  }
   jsonToDate(obj, meta.dateFields);
   if (meta.objectFields) {
     for (const objectField of meta.objectFields) {
@@ -179,6 +182,9 @@ export function json(obj: any, meta: MetaModel): any {
 }
 
 export function jsonArray<T>(list: T[], metaModel: MetaModel): T[] {
+  if (!metaModel) {
+    return list;
+  }
   if (!list || list.length === 0) {
     return list;
   }
