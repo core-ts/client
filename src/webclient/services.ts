@@ -1,4 +1,4 @@
-import {build, buildKeys, json, jsonArray, Metadata, MetaModel} from './json';
+import {build, json, jsonArray, Metadata, MetaModel} from './json';
 
 export interface SearchModel {
   limit: number;
@@ -87,9 +87,18 @@ export interface HttpRequest {
 export interface CsvService {
   fromString(value: string): Promise<string[][]>;
 }
+export interface SearchConfig {
+  page?: string;
+  limit?: string;
+  firstLimit?: string;
+  total?: string;
+  results?: string;
+  last?: string;
+}
 // tslint:disable-next-line:class-name
 export class resource {
-  static csv: CsvService = null;
+  static csv: CsvService;
+  static config: SearchConfig;
 }
 export class DefaultCsvService {
   constructor(private c: any) {
@@ -106,7 +115,26 @@ export class DefaultCsvService {
 export function fromString(value: string): Promise<string[][]> {
   return resource.csv.fromString(value);
 }
-
+export function mapSearchModel<S extends SearchModel>(s: S): S {
+  if (!resource.config) {
+    return s;
+  }
+  const c = resource.config;
+  const x: any = s;
+  if (x.page && c.page && c.page.length > 0) {
+    x[c.page] = x.page;
+    delete x.page;
+  }
+  if (x.limit && c.limit && c.limit.length > 0) {
+    x[c.limit] = x.limit;
+    delete x.limit;
+  }
+  if (x.firstLimit && c.firstLimit && c.firstLimit.length > 0) {
+    x[c.firstLimit] = x.firstLimit;
+    delete x.firstLimit;
+  }
+  return x;
+}
 export function optimizeSearchModel<S extends SearchModel>(s: S): S {
   const ks = Object.keys(s);
   const o: any = {};
@@ -176,6 +204,9 @@ export class ViewWebClient<T, ID> {
     if (metamodel) {
       this._metamodel = metamodel;
       this._keys = metamodel.keys;
+      if (pmodel && !Array.isArray(pmodel)) {
+        this.model = pmodel;
+      }
     } else {
       if (pmodel) {
         if (Array.isArray(pmodel)) {
@@ -354,8 +385,10 @@ export class SearchWebClient<T, S extends SearchModel> {
     this.makeUrlParameters = this.makeUrlParameters.bind(this);
     this.postOnly = this.postOnly.bind(this);
     this.search = this.search.bind(this);
+    this.keys = this.keys.bind(this);
     if (metaModel) {
       this._metamodel = metaModel;
+      this._keys = metaModel.keys;
     } else {
       if (pmodel) {
         if (Array.isArray(pmodel)) {
@@ -381,6 +414,9 @@ export class SearchWebClient<T, S extends SearchModel> {
   protected makeUrlParameters(s: S): string {
     return param(s);
   }
+  keys(): string[] {
+    return this._keys;
+  }
   async search(s: S, ctx?: any): Promise<SearchResult<T>> {
     this.formatSearch(s);
     if (s.fields && s.fields.length > 0) {
@@ -392,7 +428,8 @@ export class SearchWebClient<T, S extends SearchModel> {
         }
       }
     }
-    const s2 = optimizeSearchModel(s);
+    const s1 = optimizeSearchModel(s);
+    const s2 = mapSearchModel(s1);
     if (this.postOnly(s2)) {
       const postSearchUrl = this.serviceUrl + '/search';
       const res: string|SearchResult<T> = await this.http.post<string|SearchResult<T>>(postSearchUrl, s2);
@@ -432,10 +469,32 @@ export function buildSearchResult<T, S extends SearchModel>(s: S, res: string|Se
       }
       return jsonSearchResult(result, metamodel);
     } else {
-      if (!metamodel) {
-        return res;
+      const c = resource.config;
+      if (!c) {
+        if (!metamodel) {
+          return res;
+        }
+        return jsonSearchResult(res, metamodel);
+      } else {
+        const res2: any = {};
+        if (c.results && c.results.length > 0) {
+          res2.results = res[c.results];
+        } else {
+          res2.results = res.results;
+        }
+        if (c.total && c.total.length > 0) {
+          res2.total = res[c.total];
+        } else {
+          res2.total = res.total;
+        }
+        if (c.last && c.last.length > 0 && res[c.last]) {
+          res2.last = res[c.last];
+        }
+        if (!metamodel) {
+          return res2;
+        }
+        return jsonSearchResult(res2, metamodel);
       }
-      return jsonSearchResult(res, metamodel);
     }
   }
 }
@@ -457,6 +516,9 @@ export class DiffWebClient<T, ID>  {
     if (metaModel) {
       this._metaModel = metaModel;
       this._ids = metaModel.keys;
+      if (pmodel && !Array.isArray(pmodel)) {
+        this.model = pmodel;
+      }
     } else {
       if (pmodel) {
         if (Array.isArray(pmodel)) {
@@ -535,6 +597,9 @@ export class ApprWebClient<ID> {
     this.keys = this.keys.bind(this);
     if (metaModel) {
       this._keys = metaModel.keys;
+      if (pmodel && !Array.isArray(pmodel)) {
+        this.model = pmodel;
+      }
     } else {
       if (pmodel) {
         if (Array.isArray(pmodel)) {
@@ -649,7 +714,7 @@ export class ViewSearchWebClient<T, ID, S extends SearchModel> extends SearchWeb
 }
 
 export class GenericSearchWebClient<T, ID, R, S extends SearchModel> extends SearchWebClient<T, S> {
-  constructor(serviceUrl: string, http: HttpRequest, model?: Metadata, metamodel?: MetaModel, searchGet?: boolean) {
+  constructor(serviceUrl: string, http: HttpRequest, model?: Metadata|string[], metamodel?: MetaModel, searchGet?: boolean) {
     super(serviceUrl, http, model, metamodel, searchGet);
     this.genericWebClient = new GenericWebClient<T, ID, R>(serviceUrl, http, model, this._metamodel);
     this.metadata = this.metadata.bind(this);
@@ -711,7 +776,7 @@ export class ViewSearchDiffApprWebClient<T, ID, S extends SearchModel> extends V
 }
 
 export class GenericSearchDiffApprWebClient<T, ID, R, S extends SearchModel> extends GenericSearchWebClient<T, ID, R, S> {
-  constructor(serviceUrl: string, http: HttpRequest, model?: Metadata, metamodel?: MetaModel, searchGet?: boolean) {
+  constructor(serviceUrl: string, http: HttpRequest, model?: Metadata|string[], metamodel?: MetaModel, searchGet?: boolean) {
     super(serviceUrl, http, model, metamodel, searchGet);
     this.diffWebClient = new DiffApprWebClient(serviceUrl, http, model, this._metamodel);
     this.diff = this.diff.bind(this);
