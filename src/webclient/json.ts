@@ -1,19 +1,24 @@
-export enum Type {
-  ObjectId = 'ObjectId',
-  Date = 'date',
-  Boolean = 'boolean',
-
-  Number = 'number',
-  Integer = 'integer',
-  String = 'string',
-  Text = 'text',
-
-  Object = 'object',
-  Array = 'array',
-  Primitives =  'primitives',
-  Binary = 'binary'
+export interface CsvService {
+  fromString(value: string): Promise<string[][]>;
+}
+export interface SearchConfig {
+  page?: string;
+  limit?: string;
+  firstLimit?: string;
+  total?: string;
+  results?: string;
+  last?: string;
+}
+// tslint:disable-next-line:class-name
+export class resources {
+  static config: SearchConfig;
+  static ignoreDate?: boolean;
+  static csv: CsvService | ((value: string) => Promise<string[][]>);
 }
 
+export type DataType = 'ObjectId' | 'date' | 'datetime' | 'time'
+    | 'boolean' | 'number' | 'integer' | 'string' | 'text'
+    | 'object' | 'array' | 'primitives' | 'binary';
 export interface Metadata {
   name?: string;
   attributes: Attributes;
@@ -22,7 +27,7 @@ export interface Metadata {
 
 export interface Attribute {
   name?: string;
-  type: Type;
+  type: DataType;
   key?: boolean;
   ignored?: boolean;
   typeof?: Metadata;
@@ -60,11 +65,17 @@ export function build(model: Metadata): MetaModel {
       }
 
       switch (attr.type) {
-        case Type.Date: {
+        case 'datetime': {
           dateFields.push(attr.name);
           break;
         }
-        case Type.Object: {
+        case 'date': {
+          if (resources.ignoreDate) {
+            dateFields.push(attr.name);
+          }
+          break;
+        }
+        case 'object': {
           if (attr.typeof) {
             const x = build(attr.typeof);
             x.attributeName = key;
@@ -72,7 +83,7 @@ export function build(model: Metadata): MetaModel {
           }
           break;
         }
-        case Type.Array: {
+        case 'array': {
           if (attr.typeof) {
             const y = build(attr.typeof);
             y.attributeName = key;

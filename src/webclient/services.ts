@@ -1,7 +1,7 @@
-import {build, json, jsonArray, Metadata, MetaModel} from './json';
+import {build, json, jsonArray, Metadata, MetaModel, resources} from './json';
 
 export interface SearchModel {
-  limit: number;
+  limit?: number;
   fields?: string[];
 }
 export interface SearchResult<T> {
@@ -84,22 +84,6 @@ export interface HttpRequest {
   patch<T>(url: string, obj: any, options?: {headers?: Headers}): Promise<T>;
 }
 
-export interface CsvService {
-  fromString(value: string): Promise<string[][]>;
-}
-export interface SearchConfig {
-  page?: string;
-  limit?: string;
-  firstLimit?: string;
-  total?: string;
-  results?: string;
-  last?: string;
-}
-// tslint:disable-next-line:class-name
-export class resource {
-  static csv: CsvService;
-  static config: SearchConfig;
-}
 export class DefaultCsvService {
   constructor(private c: any) {
     this._csv = c;
@@ -113,13 +97,18 @@ export class DefaultCsvService {
   }
 }
 export function fromString(value: string): Promise<string[][]> {
-  return resource.csv.fromString(value);
+  const x = resources.csv;
+  if (typeof x === 'function') {
+    return x(value);
+  } else {
+    return x.fromString(value);
+  }
 }
 export function mapSearchModel<S extends SearchModel>(s: S): S {
-  if (!resource.config) {
+  if (!resources.config) {
     return s;
   }
-  const c = resource.config;
+  const c = resources.config;
   const x: any = s;
   if (x.page && c.page && c.page.length > 0) {
     x[c.page] = x.page;
@@ -469,7 +458,7 @@ export function buildSearchResult<T, S extends SearchModel>(s: S, res: string|Se
       }
       return jsonSearchResult(result, metamodel);
     } else {
-      const c = resource.config;
+      const c = resources.config;
       if (!c) {
         if (!metamodel) {
           return res;
