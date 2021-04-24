@@ -1,4 +1,4 @@
-import {build, json, jsonArray, Metadata, MetaModel, resources} from './json';
+import {build, json, jsonArray, Metadata, MetaModel, resources, SearchConfig} from './json';
 
 export interface SearchModel {
   limit?: number;
@@ -272,14 +272,34 @@ export class GenericWebClient<T, ID, R> extends ViewWebClient<T, ID> {
   }
 
   async insert(obj: T, ctx?: any): Promise<R> {
-    if (this._metamodel) {
-      json(obj, this._metamodel);
+    try {
+      if (this._metamodel) {
+        json(obj, this._metamodel);
+      }
+      const res = await this.http.post<R>(this.serviceUrl, obj);
+      if (!this._metamodel) {
+        return res;
+      }
+      return this.formatResultInfo(res, ctx);
+    } catch (err) {
+      if (err) {
+        const data = (err &&  err.response) ? err.response : err;
+        if (data.status === 404 || data.status === 410) {
+          let x: any = 0;
+          if (resources.status) {
+            x = resources.status.NotFound;
+          }
+          return x;
+        } else if (data.status === 409) {
+          let x: any = -1;
+          if (resources.status) {
+            x = resources.status.VersionError;
+          }
+          return x;
+        }
+      }
+      throw err;
     }
-    const res = await this.http.post<R>(this.serviceUrl, obj);
-    if (!this._metamodel) {
-      return res;
-    }
-    return this.formatResultInfo(res, ctx);
   }
 
   async update(obj: T, ctx?: any): Promise<R> {
@@ -300,10 +320,16 @@ export class GenericWebClient<T, ID, R> extends ViewWebClient<T, ID> {
       if (err) {
         const data = (err &&  err.response) ? err.response : err;
         if (data.status === 404 || data.status === 410) {
-          const x: any = 0;
+          let x: any = 0;
+          if (resources.status) {
+            x = resources.status.NotFound;
+          }
           return x;
         } else if (data.status === 409) {
-          const x: any = -1;
+          let x: any = -1;
+          if (resources.status) {
+            x = resources.status.VersionError;
+          }
           return x;
         }
       }
@@ -329,10 +355,16 @@ export class GenericWebClient<T, ID, R> extends ViewWebClient<T, ID> {
       if (err) {
         const data = (err &&  err.response) ? err.response : err;
         if (data.status === 404 || data.status === 410) {
-          const x: any = 0;
+          let x: any = 0;
+          if (resources.status) {
+            x = resources.status.NotFound;
+          }
           return x;
         } else if (data.status === 409) {
-          const x: any = -1;
+          let x: any = -1;
+          if (resources.status) {
+            x = resources.status.VersionError;
+          }
           return x;
         }
       }
@@ -421,27 +453,35 @@ export class SearchWebClient<T, S extends SearchModel> {
     const s2 = mapSearchModel(s1);
     if (this.postOnly(s2)) {
       const postSearchUrl = this.serviceUrl + '/search';
-      const res: string|SearchResult<T> = await this.http.post<string|SearchResult<T>>(postSearchUrl, s2);
-      return buildSearchResult(s, res, this._metamodel);
+      const res = await this.http.post(postSearchUrl, s2);
+      return buildSearchResultByConfig(s, res, resources.config, this._metamodel);
     }
     const keys2 = Object.keys(s2);
     if (keys2.length === 0) {
       const searchUrl = (this.searchGet ? this.serviceUrl + '/search' : this.serviceUrl);
       const res: string|SearchResult<T> = await this.http.get(searchUrl);
-      return buildSearchResult(s, res, this._metamodel);
+      return buildSearchResultByConfig(s, res, resources.config, this._metamodel);
     } else {
       const params = this.makeUrlParameters(s2);
       let searchUrl = (this.searchGet ? this.serviceUrl + '/search' : this.serviceUrl);
       searchUrl = searchUrl + '?' + params;
       if (searchUrl.length <= 255) {
         const res: string|SearchResult<T> = await this.http.get(searchUrl);
-        return buildSearchResult(s, res, this._metamodel);
+        return buildSearchResultByConfig(s, res, resources.config, this._metamodel);
       } else {
         const postSearchUrl = this.serviceUrl + '/search';
         const res: string|SearchResult<T> = await this.http.post<string|SearchResult<T>>(postSearchUrl, s2);
-        return buildSearchResult(s, res, this._metamodel);
+        return buildSearchResultByConfig(s, res, resources.config, this._metamodel);
       }
     }
+  }
+}
+export function buildSearchResultByConfig<T, S extends SearchModel>(s: S, res: string|SearchResult<T>|T[]|any, c: SearchConfig, metamodel?: MetaModel): SearchResult<T>|Promise<SearchResult<T>> {
+  if (c && c.body && c.body.length > 0) {
+    const re = res[c.body];
+    return buildSearchResult(s, re, metamodel);
+  } else {
+    return buildSearchResult(s, res, metamodel);
   }
 }
 export function buildSearchResult<T, S extends SearchModel>(s: S, res: string|SearchResult<T>|T[], metamodel?: MetaModel): SearchResult<T>|Promise<SearchResult<T>> {
@@ -573,12 +613,6 @@ export class DiffWebClient<T, ID>  {
   }
 }
 
-export enum Status {
-  NotFound = 0,
-  Success = 1,
-  VersionError = 2,
-  Error = 4
-}
 export class ApprWebClient<ID> {
   constructor(protected serviceUrl: string, protected http: HttpRequest, pmodel?: Metadata|string[], metaModel?: MetaModel) {
     this.approve = this.approve.bind(this);
@@ -609,7 +643,7 @@ export class ApprWebClient<ID> {
     return this._keys;
   }
 
-  async approve(id: ID, ctx?: any): Promise<Status> {
+  async approve(id: ID, ctx?: any): Promise<number|string> {
     try {
       let url = this.serviceUrl + '/' + id + '/approve';
       if (this._keys && this._keys.length > 0 && typeof id === 'object') {
@@ -619,21 +653,28 @@ export class ApprWebClient<ID> {
         }
         url = url + '/approve';
       }
-      const res = await this.http.get<Status>(url);
+      const res = await this.http.get<number|string>(url);
       return res;
     } catch (err) {
+      if (!resources.diff) {
+        throw err;
+      }
       if (err) {
         const data = (err &&  err.response) ? err.response : err;
         if (data.status === 404 || data.status === 410) {
-          return Status.NotFound;
+          return resources.diff.NotFound;
         } else if (data.status === 409) {
-          return Status.VersionError;
+          return resources.diff.VersionError;
         }
       }
-      return Status.Error;
+      if (resources.diff.Error) {
+        return resources.diff.Error;
+      } else {
+        throw err;
+      }
     }
   }
-  async reject(id: ID, ctx?: any): Promise<Status> {
+  async reject(id: ID, ctx?: any): Promise<number|string> {
     try {
       let url = this.serviceUrl + '/' + id + '/reject';
       if (this._keys && this._keys.length > 0 && typeof id === 'object') {
@@ -643,18 +684,25 @@ export class ApprWebClient<ID> {
         }
         url = url + '/reject';
       }
-      const res = await this.http.get<Status>(url);
+      const res = await this.http.get<number|string>(url);
       return res;
     } catch (err) {
+      if (!resources.diff) {
+        throw err;
+      }
       if (err) {
         const data = (err &&  err.response) ? err.response : err;
         if (data.status === 404 || data.status === 410) {
-          return Status.NotFound;
+          return resources.diff.NotFound;
         } else if (data.status === 409) {
-          return Status.VersionError;
+          return resources.diff.VersionError;
         }
       }
-      return Status.Error;
+      if (resources.diff.Error) {
+        return resources.diff.Error;
+      } else {
+        throw err;
+      }
     }
   }
 }
@@ -667,10 +715,10 @@ export class DiffApprWebClient<T, ID> extends DiffWebClient<T, ID> {
     this.reject = this.reject.bind(this);
   }
   private apprWebClient: ApprWebClient<ID>;
-  approve(id: ID, ctx?: any): Promise<Status> {
+  approve(id: ID, ctx?: any): Promise<number|string> {
     return this.apprWebClient.approve(id, ctx);
   }
-  reject(id: ID, ctx?: any): Promise<Status> {
+  reject(id: ID, ctx?: any): Promise<number|string> {
     return this.apprWebClient.reject(id, ctx);
   }
 }
@@ -756,10 +804,10 @@ export class ViewSearchDiffApprWebClient<T, ID, S extends SearchModel> extends V
   async diff(id: ID, ctx?: any): Promise<DiffModel<T, ID>> {
     return this.diffWebClient.diff(id, ctx);
   }
-  async approve(id: ID, ctx?: any): Promise<Status> {
+  async approve(id: ID, ctx?: any): Promise<number|string> {
     return this.diffWebClient.approve(id, ctx);
   }
-  async reject(id: ID, ctx?: any): Promise<Status> {
+  async reject(id: ID, ctx?: any): Promise<number|string> {
     return this.diffWebClient.reject(id, ctx);
   }
 }
@@ -776,10 +824,10 @@ export class GenericSearchDiffApprWebClient<T, ID, R, S extends SearchModel> ext
   async diff(id: ID, ctx?: any): Promise<DiffModel<T, ID>> {
     return this.diffWebClient.diff(id, ctx);
   }
-  async approve(id: ID, ctx?: any): Promise<Status> {
+  async approve(id: ID, ctx?: any): Promise<number|string> {
     return this.diffWebClient.approve(id, ctx);
   }
-  async reject(id: ID, ctx?: any): Promise<Status> {
+  async reject(id: ID, ctx?: any): Promise<number|string> {
     return this.diffWebClient.reject(id, ctx);
   }
 }

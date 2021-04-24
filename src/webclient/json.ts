@@ -8,10 +8,28 @@ export interface SearchConfig {
   total?: string;
   results?: string;
   last?: string;
+  body?: string;
+  request?: string;
+}
+export interface EditStatusConfig {
+  DuplicateKey: number|string;
+  NotFound: number|string;
+  Success: number|string;
+  VersionError: number|string;
+  Error?: number|string;
+  DataCorrupt?: number|string;
+}
+export interface DiffStatusConfig {
+  NotFound: number|string;
+  Success: number|string;
+  VersionError: number|string;
+  Error?: number|string;
 }
 // tslint:disable-next-line:class-name
 export class resources {
   static config: SearchConfig;
+  static status: EditStatusConfig;
+  static diff: DiffStatusConfig;
   static ignoreDate?: boolean;
   static csv: CsvService | ((value: string) => Promise<string[][]>);
 }
