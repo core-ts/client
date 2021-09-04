@@ -6,10 +6,13 @@ export interface SearchConfig {
   limit?: string;
   firstLimit?: string;
   total?: string;
-  results?: string;
+  list?: string;
   last?: string;
   body?: string;
   request?: string;
+  fields?: string;
+  excluding?: string;
+  nextPageToken?: string;
 }
 export interface EditStatusConfig {
   DuplicateKey: number|string;
@@ -27,9 +30,9 @@ export interface DiffStatusConfig {
 }
 // tslint:disable-next-line:class-name
 export class resources {
-  static config: SearchConfig;
-  static status: EditStatusConfig;
-  static diff: DiffStatusConfig;
+  static config?: SearchConfig;
+  static status?: EditStatusConfig;
+  static diff?: DiffStatusConfig;
   static ignoreDate?: boolean;
   static csv: CsvService | ((value: string) => Promise<string[][]>);
 }
@@ -63,7 +66,7 @@ export interface MetaModel {
   arrayFields?: MetaModel[];
 }
 
-export function build(model: Metadata): MetaModel {
+export function build(model: Metadata, ignoreDate?: boolean): MetaModel {
   if (model && !model.source) {
     model.source = model.name;
   }
@@ -88,14 +91,14 @@ export function build(model: Metadata): MetaModel {
           break;
         }
         case 'date': {
-          if (resources.ignoreDate) {
+          if (ignoreDate) {
             dateFields.push(attr.name);
           }
           break;
         }
         case 'object': {
           if (attr.typeof) {
-            const x = build(attr.typeof);
+            const x = build(attr.typeof, ignoreDate);
             x.attributeName = key;
             objectFields.push(x);
           }
@@ -103,7 +106,7 @@ export function build(model: Metadata): MetaModel {
         }
         case 'array': {
           if (attr.typeof) {
-            const y = build(attr.typeof);
+            const y = build(attr.typeof, ignoreDate);
             y.attributeName = key;
             arrayFields.push(y);
           }
