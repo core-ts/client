@@ -15,18 +15,18 @@ export interface SearchConfig {
   nextPageToken?: string;
 }
 export interface EditStatusConfig {
-  DuplicateKey: number|string;
-  NotFound: number|string;
-  Success: number|string;
-  VersionError: number|string;
-  Error?: number|string;
-  DataCorrupt?: number|string;
+  duplicate_key?: number|string;
+  not_found?: number|string;
+  success?: number|string;
+  version_error?: number|string;
+  error?: number|string;
+  data_corrupt?: number|string;
 }
 export interface DiffStatusConfig {
-  NotFound: number|string;
-  Success: number|string;
-  VersionError: number|string;
-  Error?: number|string;
+  not_found?: number|string;
+  success?: number|string;
+  version_error?: number|string;
+  error?: number|string;
 }
 // tslint:disable-next-line:class-name
 export class resources {
@@ -40,25 +40,20 @@ export class resources {
 export type DataType = 'ObjectId' | 'date' | 'datetime' | 'time'
     | 'boolean' | 'number' | 'integer' | 'string' | 'text'
     | 'object' | 'array' | 'primitives' | 'binary';
-export interface Metadata {
-  name?: string;
-  attributes: Attributes;
-  source?: string;
-}
 
 export interface Attribute {
   name?: string;
-  type: DataType;
+  type?: DataType;
   key?: boolean;
   ignored?: boolean;
-  typeof?: Metadata;
+  typeof?: Attributes;
 }
 export interface Attributes {
   [key: string]: Attribute;
 }
 
 export interface MetaModel {
-  model: Metadata;
+  attributes: Attributes;
   attributeName?: string;
   keys?: string[];
   dateFields?: string[];
@@ -66,17 +61,19 @@ export interface MetaModel {
   arrayFields?: MetaModel[];
 }
 
-export function build(model: Metadata, ignoreDate?: boolean): MetaModel {
+export function build(attributes: Attributes, ignoreDate?: boolean): MetaModel {
+  /*
   if (model && !model.source) {
     model.source = model.name;
   }
+  */
   const primaryKeys: string[] = new Array<string>();
   const dateFields = new Array<string>();
   const objectFields = new Array<MetaModel>();
   const arrayFields = new Array<MetaModel>();
-  const ids: string[] = Object.keys(model.attributes);
+  const ids: string[] = Object.keys(attributes);
   for (const key of ids) {
-    const attr: Attribute = model.attributes[key];
+    const attr: Attribute = attributes[key];
     if (attr) {
       attr.name = key;
       if (attr.ignored !== true) {
@@ -117,7 +114,7 @@ export function build(model: Metadata, ignoreDate?: boolean): MetaModel {
       }
     }
   }
-  const metadata: MetaModel = {model};
+  const metadata: MetaModel = {attributes};
   if (primaryKeys.length > 0) {
     metadata.keys = primaryKeys;
   }
@@ -133,11 +130,14 @@ export function build(model: Metadata, ignoreDate?: boolean): MetaModel {
   return metadata;
 }
 
-export function buildKeys(model: Metadata): string[] {
-  const ids: string[] = Object.keys(model.attributes);
+export function buildKeys(attributes: Attributes): string[] {
+  if (!attributes) {
+    return [];
+  }
+  const ids: string[] = Object.keys(attributes);
   const pks: string[] = [];
   for (const key of ids) {
-    const attr: Attribute = model.attributes[key];
+    const attr: Attribute = attributes[key];
     if (attr && attr.ignored !== true && attr.key === true && attr.name && attr.name.length > 0) {
       pks.push(attr.name);
     }
