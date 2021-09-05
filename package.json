@@ -23,6 +23,7 @@
     "crud",
     "search",
     "http-client",
-    "web-client"
+    "web-client",
+    "web-clients"
   ]
 }

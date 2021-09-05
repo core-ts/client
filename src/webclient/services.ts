@@ -183,7 +183,7 @@ export async function fromCsv<T>(m: SearchModel, csv: string, sfields?: string):
 }
 
 export class ViewWebClient<T, ID> {
-  constructor(protected serviceUrl: string, protected http: HttpRequest, pmodel?: Attributes|string[], metamodel?: MetaModel, ignoreDate?: boolean) {
+  constructor(protected serviceUrl: string, protected http: HttpRequest, pmodel?: Attributes|string[], ignoreDate?: boolean, metamodel?: MetaModel) {
     this.metadata = this.metadata.bind(this);
     this.keys = this.keys.bind(this);
     this.all = this.all.bind(this);
@@ -253,8 +253,8 @@ export class ViewWebClient<T, ID> {
 }
 
 export class GenericWebClient<T, ID, R> extends ViewWebClient<T, ID> {
-  constructor(serviceUrl: string, http: HttpRequest, pmodel?: Attributes|string[], metamodel?: MetaModel, public status?: EditStatusConfig, ignoreDate?: boolean) {
-    super(serviceUrl, http, pmodel, metamodel, ignoreDate);
+  constructor(serviceUrl: string, http: HttpRequest, pmodel?: Attributes|string[], public status?: EditStatusConfig, ignoreDate?: boolean, metamodel?: MetaModel) {
+    super(serviceUrl, http, pmodel, ignoreDate, metamodel);
     this.formatResultInfo = this.formatResultInfo.bind(this);
     this.insert = this.insert.bind(this);
     this.update = this.update.bind(this);
@@ -402,7 +402,7 @@ export class GenericWebClient<T, ID, R> extends ViewWebClient<T, ID> {
 }
 
 export class SearchWebClient<T, S extends SearchModel> {
-  constructor(protected serviceUrl: string, protected http: HttpRequest, pmodel?: Attributes|string[], metaModel?: MetaModel, protected config?: SearchConfig, ignoreDate?: boolean, protected searchGet?: boolean) {
+  constructor(protected serviceUrl: string, protected http: HttpRequest, pmodel?: Attributes|string[], metaModel?: MetaModel, public config?: SearchConfig, ignoreDate?: boolean, protected searchGet?: boolean) {
     this.formatSearch = this.formatSearch.bind(this);
     this.makeUrlParameters = this.makeUrlParameters.bind(this);
     this.postOnly = this.postOnly.bind(this);
@@ -559,7 +559,7 @@ export interface DiffModel<T, ID> {
   value: T;
 }
 export class DiffWebClient<T, ID>  {
-  constructor(protected serviceUrl: string, protected http: HttpRequest, pmodel?: Attributes|string[], metaModel?: MetaModel, ignoreDate?: boolean) {
+  constructor(protected serviceUrl: string, protected http: HttpRequest, pmodel?: Attributes|string[], ignoreDate?: boolean, metaModel?: MetaModel) {
     this.diff = this.diff.bind(this);
     if (metaModel) {
       this._metaModel = metaModel;
@@ -633,7 +633,7 @@ export class DiffWebClient<T, ID>  {
 }
 
 export class ApprWebClient<ID> {
-  constructor(protected serviceUrl: string, protected http: HttpRequest, pmodel?: Attributes|string[], metaModel?: MetaModel, protected diffStatus?: DiffStatusConfig, ignoreDate?: boolean) {
+  constructor(protected serviceUrl: string, protected http: HttpRequest, pmodel?: Attributes|string[], public diffStatus?: DiffStatusConfig, ignoreDate?: boolean, metaModel?: MetaModel) {
     this.approve = this.approve.bind(this);
     this.reject = this.reject.bind(this);
     this.keys = this.keys.bind(this);
@@ -730,9 +730,9 @@ export class ApprWebClient<ID> {
 }
 
 export class DiffApprWebClient<T, ID> extends DiffWebClient<T, ID> {
-  constructor(protected serviceUrl: string, protected http: HttpRequest, model?: Attributes|string[], metaModel?: MetaModel, diffStatus?: DiffStatusConfig, ignoreDate?: boolean) {
-    super(serviceUrl, http, model, metaModel);
-    this.apprWebClient = new ApprWebClient(serviceUrl, http, model, this._metaModel, diffStatus, ignoreDate);
+  constructor(protected serviceUrl: string, protected http: HttpRequest, model?: Attributes|string[], diffStatus?: DiffStatusConfig, ignoreDate?: boolean, metaModel?: MetaModel) {
+    super(serviceUrl, http, model, ignoreDate, metaModel);
+    this.apprWebClient = new ApprWebClient(serviceUrl, http, model, diffStatus, ignoreDate, this._metaModel);
     this.approve = this.approve.bind(this);
     this.reject = this.reject.bind(this);
   }
@@ -746,9 +746,9 @@ export class DiffApprWebClient<T, ID> extends DiffWebClient<T, ID> {
 }
 
 export class ViewSearchWebClient<T, ID, S extends SearchModel> extends SearchWebClient<T, S> {
-  constructor(serviceUrl: string, http: HttpRequest, model?: Attributes|string[], metamodel?: MetaModel, config?: SearchConfig, ignoreDate?: boolean, searchGet?: boolean) {
+  constructor(serviceUrl: string, http: HttpRequest, model?: Attributes|string[], config?: SearchConfig, ignoreDate?: boolean, searchGet?: boolean, metamodel?: MetaModel) {
     super(serviceUrl, http, model, metamodel, config, ignoreDate, searchGet);
-    this.viewWebClient = new ViewWebClient<T, ID>(serviceUrl, http, model, this._metamodel, ignoreDate);
+    this.viewWebClient = new ViewWebClient<T, ID>(serviceUrl, http, model, ignoreDate, this._metamodel);
     this.metadata = this.metadata.bind(this);
     this.keys = this.keys.bind(this);
     this.all = this.all.bind(this);
@@ -773,9 +773,9 @@ export class ViewSearchWebClient<T, ID, S extends SearchModel> extends SearchWeb
 }
 
 export class GenericSearchWebClient<T, ID, R, S extends SearchModel> extends SearchWebClient<T, S> {
-  constructor(serviceUrl: string, http: HttpRequest, model?: Attributes|string[], metamodel?: MetaModel, config?: SearchConfig&EditStatusConfig, ignoreDate?: boolean, searchGet?: boolean) {
+  constructor(serviceUrl: string, http: HttpRequest, model?: Attributes|string[], config?: SearchConfig&EditStatusConfig, ignoreDate?: boolean, searchGet?: boolean, metamodel?: MetaModel) {
     super(serviceUrl, http, model, metamodel, config, ignoreDate, searchGet);
-    this.genericWebClient = new GenericWebClient<T, ID, R>(serviceUrl, http, model, this._metamodel, config, ignoreDate);
+    this.genericWebClient = new GenericWebClient<T, ID, R>(serviceUrl, http, model, config, ignoreDate, this._metamodel);
     this.metadata = this.metadata.bind(this);
     this.keys = this.keys.bind(this);
     this.all = this.all.bind(this);
@@ -815,9 +815,9 @@ export class GenericSearchWebClient<T, ID, R, S extends SearchModel> extends Sea
 }
 
 export class ViewSearchDiffApprWebClient<T, ID, S extends SearchModel> extends ViewSearchWebClient<T, ID, S> {
-  constructor(serviceUrl: string, http: HttpRequest, model?: Attributes|string[], metamodel?: MetaModel, config?: SearchConfig&DiffStatusConfig, ignoreDate?: boolean, searchGet?: boolean) {
-    super(serviceUrl, http, model, metamodel, config, ignoreDate, searchGet);
-    this.diffWebClient = new DiffApprWebClient(serviceUrl, http, model, this._metamodel, config, ignoreDate);
+  constructor(serviceUrl: string, http: HttpRequest, model?: Attributes|string[], config?: SearchConfig&DiffStatusConfig, ignoreDate?: boolean, searchGet?: boolean, metamodel?: MetaModel) {
+    super(serviceUrl, http, model, config, ignoreDate, searchGet, metamodel);
+    this.diffWebClient = new DiffApprWebClient(serviceUrl, http, model, config, ignoreDate, this._metamodel);
     this.diff = this.diff.bind(this);
     this.approve = this.approve.bind(this);
     this.reject = this.reject.bind(this);
@@ -835,9 +835,9 @@ export class ViewSearchDiffApprWebClient<T, ID, S extends SearchModel> extends V
 }
 
 export class GenericSearchDiffApprWebClient<T, ID, R, S extends SearchModel> extends GenericSearchWebClient<T, ID, R, S> {
-  constructor(serviceUrl: string, http: HttpRequest, model?: Attributes|string[], metamodel?: MetaModel, config?: SearchConfig&EditStatusConfig&DiffStatusConfig, ignoreDate?: boolean, searchGet?: boolean) {
-    super(serviceUrl, http, model, metamodel, config, ignoreDate, searchGet);
-    this.diffWebClient = new DiffApprWebClient(serviceUrl, http, model, this._metamodel, config, ignoreDate);
+  constructor(serviceUrl: string, http: HttpRequest, model?: Attributes|string[], config?: SearchConfig&EditStatusConfig&DiffStatusConfig, ignoreDate?: boolean, searchGet?: boolean, metamodel?: MetaModel) {
+    super(serviceUrl, http, model, config, ignoreDate, searchGet, metamodel);
+    this.diffWebClient = new DiffApprWebClient(serviceUrl, http, model, config, ignoreDate, this._metamodel);
     this.diff = this.diff.bind(this);
     this.approve = this.approve.bind(this);
     this.reject = this.reject.bind(this);
