@@ -1,6 +1,6 @@
 {
   "name": "web-clients",
-  "version": "0.1.12",
+  "version": "0.1.17",
   "description": "Web Client",
   "main": "./lib/index.js",
   "types": "./src/index.ts",
