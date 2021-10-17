@@ -2,7 +2,7 @@ import {Attributes, build, DiffStatusConfig, EditStatusConfig, json, jsonArray, 
 
 export * from './json';
 // tslint:disable-next-line:no-empty-interface
-export interface SearchModel {
+export interface Filter {
   // limit?: number;
   // fields?: string[];
 }
@@ -113,7 +113,7 @@ export function fromString(value: string): Promise<string[][]> {
     return x.fromString(value);
   }
 }
-export function optimizeSearchModel<S extends SearchModel>(s: S, page?: string, limit?: string, firstLimit?: string): S {
+export function optimizeFilter<S extends Filter>(s: S, page?: string, limit?: string, firstLimit?: string): S {
   const ks = Object.keys(s);
   const o: any = {};
   for (const key of ks) {
@@ -152,7 +152,7 @@ export function optimizeSearchModel<S extends SearchModel>(s: S, page?: string, 
   }
   return o;
 }
-export function fromCsv<T>(m: SearchModel, csv: string, sfields?: string): Promise<SearchResult<T>> {
+export function fromCsv<T>(m: Filter, csv: string, sfields?: string): Promise<SearchResult<T>> {
   return fromString(csv).then(items => {
     const arr = [];
     if (!sfields || sfields.length === 0) {
@@ -400,7 +400,7 @@ export class GenericClient<T, ID, R> extends ViewClient<T, ID> {
   }
 }
 
-export class SearchClient<T, S extends SearchModel> {
+export class SearchClient<T, S extends Filter> {
   constructor(protected http: HttpRequest, protected serviceUrl: string, pmodel?: Attributes|string[], metaModel?: MetaModel, public config?: SearchConfig, ignoreDate?: boolean, protected searchGet?: boolean) {
     this.formatSearch = this.formatSearch.bind(this);
     this.makeUrlParameters = this.makeUrlParameters.bind(this);
@@ -468,8 +468,7 @@ export class SearchClient<T, S extends SearchModel> {
       }
     }
     const sfl = (c ? c.firstLimit : undefined);
-    const s1 = optimizeSearchModel(s, sp, sl, sfl);
-    // const s2 = mapSearchModel(s1);
+    const s1 = optimizeFilter(s, sp, sl, sfl);
     if (t.postOnly(s1)) {
       const postSearchUrl = t.serviceUrl + '/search';
       return t.http.post(postSearchUrl, s1).then(res => buildSearchResultByConfig(s, res, c, t._metamodel, sf));
@@ -492,7 +491,7 @@ export class SearchClient<T, S extends SearchModel> {
     }
   }
 }
-export function buildSearchResultByConfig<T, S extends SearchModel>(s: S, res: string|SearchResult<T>|T[]|any, c: SearchConfig, metamodel?: MetaModel, sfields?: string): SearchResult<T>|Promise<SearchResult<T>> {
+export function buildSearchResultByConfig<T, S extends Filter>(s: S, res: string|SearchResult<T>|T[]|any, c: SearchConfig, metamodel?: MetaModel, sfields?: string): SearchResult<T>|Promise<SearchResult<T>> {
   if (c && c.body && c.body.length > 0) {
     const re = res[c.body];
     return buildSearchResult(s, re, c, metamodel, sfields);
@@ -500,7 +499,7 @@ export function buildSearchResultByConfig<T, S extends SearchModel>(s: S, res: s
     return buildSearchResult(s, res, c, metamodel, sfields);
   }
 }
-export function buildSearchResult<T, S extends SearchModel>(s: S, res: string|SearchResult<T>|T[], c: SearchConfig, metamodel?: MetaModel, sfields?: string): SearchResult<T>|Promise<SearchResult<T>> {
+export function buildSearchResult<T, S extends Filter>(s: S, res: string|SearchResult<T>|T[], c: SearchConfig, metamodel?: MetaModel, sfields?: string): SearchResult<T>|Promise<SearchResult<T>> {
   if (typeof res === 'string') {
     return fromCsv<T>(s, res, sfields);
   } else {
@@ -737,7 +736,7 @@ export class DiffApprClient<T, ID> extends DiffClient<T, ID> {
   }
 }
 
-export class ViewSearchClient<T, ID, S extends SearchModel> extends SearchClient<T, S> {
+export class ViewSearchClient<T, ID, S extends Filter> extends SearchClient<T, S> {
   constructor(http: HttpRequest, serviceUrl: string, model?: Attributes|string[], config?: SearchConfig, ignoreDate?: boolean, searchGet?: boolean, metamodel?: MetaModel) {
     super(http, serviceUrl, model, metamodel, config, ignoreDate, searchGet);
     this.viewWebClient = new ViewClient<T, ID>(http, serviceUrl, model, ignoreDate, this._metamodel);
@@ -764,7 +763,7 @@ export class ViewSearchClient<T, ID, S extends SearchModel> extends SearchClient
   }
 }
 
-export class GenericSearchClient<T, ID, R, S extends SearchModel> extends SearchClient<T, S> {
+export class GenericSearchClient<T, ID, R, S extends Filter> extends SearchClient<T, S> {
   constructor(http: HttpRequest, serviceUrl: string, model?: Attributes|string[], config?: SearchConfig&EditStatusConfig, ignoreDate?: boolean, searchGet?: boolean, metamodel?: MetaModel) {
     super(http, serviceUrl, model, metamodel, config, ignoreDate, searchGet);
     this.genericWebClient = new GenericClient<T, ID, R>(http, serviceUrl, model, config, ignoreDate, this._metamodel);
@@ -806,7 +805,7 @@ export class GenericSearchClient<T, ID, R, S extends SearchModel> extends Search
   }
 }
 
-export class ViewSearchDiffApprClient<T, ID, S extends SearchModel> extends ViewSearchClient<T, ID, S> {
+export class ViewSearchDiffApprClient<T, ID, S extends Filter> extends ViewSearchClient<T, ID, S> {
   constructor(http: HttpRequest, serviceUrl: string, model?: Attributes|string[], config?: SearchConfig&DiffStatusConfig, ignoreDate?: boolean, searchGet?: boolean, metamodel?: MetaModel) {
     super(http, serviceUrl, model, config, ignoreDate, searchGet, metamodel);
     this.diffWebClient = new DiffApprClient(http, serviceUrl, model, config, ignoreDate, this._metamodel);
@@ -826,7 +825,7 @@ export class ViewSearchDiffApprClient<T, ID, S extends SearchModel> extends View
   }
 }
 
-export class GenericSearchDiffApprClient<T, ID, R, S extends SearchModel> extends GenericSearchClient<T, ID, R, S> {
+export class GenericSearchDiffApprClient<T, ID, R, S extends Filter> extends GenericSearchClient<T, ID, R, S> {
   constructor(http: HttpRequest, serviceUrl: string, model?: Attributes|string[], config?: SearchConfig&EditStatusConfig&DiffStatusConfig, ignoreDate?: boolean, searchGet?: boolean, metamodel?: MetaModel) {
     super(http, serviceUrl, model, config, ignoreDate, searchGet, metamodel);
     this.diffWebClient = new DiffApprClient(http, serviceUrl, model, config, ignoreDate, this._metamodel);
