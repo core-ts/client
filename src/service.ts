@@ -228,7 +228,7 @@ export class ViewClient<T, ID> {
     });
   }
 
-  load(id: ID, ctx?: any): Promise<T|undefined|null> {
+  load(id: ID, ctx?: any): Promise<T|null> {
     const t = this;
     let url = t.serviceUrl + '/' + id;
     if (t._keys && t._keys.length > 0 && typeof id === 'object') {
@@ -757,7 +757,7 @@ export class ViewSearchClient<T, ID, S extends Filter> extends SearchWebClient<T
     return this.viewWebClient.all(ctx);
   }
 
-  load(id: ID, ctx?: any): Promise<T|undefined|null> {
+  load(id: ID, ctx?: any): Promise<T|null> {
     return this.viewWebClient.load(id, ctx);
   }
 }
@@ -786,7 +786,7 @@ export class GenericSearchClient<T, ID, R, S extends Filter> extends SearchWebCl
   all(ctx?: any): Promise<T[]> {
     return this.genericWebClient.all(ctx);
   }
-  load(id: ID, ctx?: any): Promise<T|undefined|null> {
+  load(id: ID, ctx?: any): Promise<T|null> {
     return this.genericWebClient.load(id, ctx);
   }
 
