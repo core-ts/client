@@ -1,6 +1,5 @@
 import {Attributes, build, DiffStatusConfig, EditStatusConfig, json, jsonArray, MetaModel, resources, SearchConfig} from './json';
 
-export * from './json';
 // tslint:disable-next-line:no-empty-interface
 export interface Filter {
   // limit?: number;
@@ -101,7 +100,7 @@ export class DefaultCsvService {
   private _csv: any;
   fromString(value: string): Promise<string[][]> {
     return new Promise( resolve => {
-      this._csv({noheader: true, output: 'csv'}).fromString(value).then(v => resolve(v));
+      this._csv({noheader: true, output: 'csv'}).fromString(value).then((v: string[][] | PromiseLike<string[][]>) => resolve(v));
     });
   }
 }
@@ -117,7 +116,7 @@ export function optimizeFilter<S extends Filter>(s: S, page?: string, limit?: st
   const ks = Object.keys(s);
   const o: any = {};
   for (const key of ks) {
-    const p = s[key];
+    const p = (s as any)[key];
     if (key === page) {
       if (p && p >= 1) {
         o[key] = p;
@@ -139,10 +138,10 @@ export function optimizeFilter<S extends Filter>(s: S, page?: string, limit?: st
     }
   }
   // o.includeTotal = true;
-  if (o[limit] && o[firstLimit] === o[limit]) {
+  if (limit && firstLimit && o[limit] && o[firstLimit] === o[limit]) {
     delete o[firstLimit];
   }
-  if (o[page] <= 1) {
+  if (page && o[page] <= 1) {
     delete o[page];
   }
   for (const key of Object.keys(o)) {
@@ -158,7 +157,7 @@ export function fromCsv<T>(m: Filter, csv: string, sfields?: string): Promise<Se
     if (!sfields || sfields.length === 0) {
       sfields = 'fields';
     }
-    const fields: string[] = m[sfields];
+    const fields: string[] = (m as any)[sfields];
     if (Array.isArray(fields)) {
       for (let i = 1; i < items.length; i++) {
         const obj: any =  {};
@@ -209,13 +208,13 @@ export class ViewClient<T, ID> {
     }
   }
   private _keys: string[] = [];
-  protected attributes: Attributes;
-  protected _metamodel: MetaModel;
+  protected attributes?: Attributes;
+  protected _metamodel?: MetaModel;
 
   keys(): string[] {
     return this._keys;
   }
-  metadata(): Attributes {
+  metadata(): Attributes|undefined {
     return this.attributes;
   }
 
@@ -229,13 +228,13 @@ export class ViewClient<T, ID> {
     });
   }
 
-  load(id: ID, ctx?: any): Promise<T> {
+  load(id: ID, ctx?: any): Promise<T|undefined|null> {
     const t = this;
     let url = t.serviceUrl + '/' + id;
     if (t._keys && t._keys.length > 0 && typeof id === 'object') {
       url = t.serviceUrl;
       for (const name of t._keys) {
-        url = url + '/' + id[name];
+        url = url + '/' + (id as any)[name];
       }
     }
     return t.http.get<T>(url).then(obj => {
@@ -310,7 +309,7 @@ export class GenericClient<T, ID, R> extends ViewClient<T, ID> {
     const ks = t.keys();
     if (ks && ks.length > 0) {
       for (const name of ks) {
-        url += '/' + obj[name];
+        url += '/' + (obj as any)[name];
       }
     }
     return t.http.put<R>(url, obj).then(res => {
@@ -345,7 +344,7 @@ export class GenericClient<T, ID, R> extends ViewClient<T, ID> {
     const ks = t.keys();
     if (ks && ks.length > 0) {
       for (const name of ks) {
-        url += '/' + obj[name];
+        url += '/' + (obj as any)[name];
       }
     }
     return t.http.patch<R>(url, obj).then(res => {
@@ -382,7 +381,7 @@ export class GenericClient<T, ID, R> extends ViewClient<T, ID> {
       if (ks && ks.length > 0) {
         url = t.serviceUrl;
         for (const key of ks) {
-          url = url + '/' + id[key];
+          url = url + '/' + (id as any)[key];
         }
       }
     }
@@ -400,7 +399,7 @@ export class GenericClient<T, ID, R> extends ViewClient<T, ID> {
   }
 }
 
-export class SearchClient<T, S extends Filter> {
+export class SearchWebClient<T, S extends Filter> {
   constructor(protected http: HttpRequest, protected serviceUrl: string, pmodel?: Attributes|string[], metaModel?: MetaModel, public config?: SearchConfig, ignoreDate?: boolean, protected searchGet?: boolean) {
     this.formatSearch = this.formatSearch.bind(this);
     this.makeUrlParameters = this.makeUrlParameters.bind(this);
@@ -423,7 +422,7 @@ export class SearchClient<T, S extends Filter> {
     }
   }
   protected _keys: string[] = [];
-  protected _metamodel: MetaModel;
+  protected _metamodel?: MetaModel;
 
   protected postOnly(s: S): boolean {
     return false;
@@ -451,19 +450,19 @@ export class SearchClient<T, S extends Filter> {
           }
         }
       }
-      s[sf] = fields;
+      (s as any)[sf] = fields;
     }
     const sl = (c && c.limit && c.limit.length > 0 ? c.limit : 'limit');
     const sp = (c && c.page && c.page.length > 0 ? c.page : 'page');
-    s[sl] = limit;
-    if (offset) {
+    (s as any)[sl] = limit;
+    if (limit && offset) {
       if (typeof offset === 'string') {
         const sn = (c && c.nextPageToken && c.nextPageToken.length > 0 ? c.nextPageToken : 'nextPageToken');
-        s[sn] = offset;
+        (s as any)[sn] = offset;
       } else {
         if (offset >= limit) {
           const page = offset / limit + 1;
-          s[sp] = page;
+          (s as any)[sp] = page;
         }
       }
     }
@@ -491,7 +490,7 @@ export class SearchClient<T, S extends Filter> {
     }
   }
 }
-export function buildSearchResultByConfig<T, S extends Filter>(s: S, res: string|SearchResult<T>|T[]|any, c: SearchConfig, metamodel?: MetaModel, sfields?: string): SearchResult<T>|Promise<SearchResult<T>> {
+export function buildSearchResultByConfig<T, S extends Filter>(s: S, res: string|SearchResult<T>|T[]|any, c?: SearchConfig, metamodel?: MetaModel, sfields?: string): SearchResult<T>|Promise<SearchResult<T>> {
   if (c && c.body && c.body.length > 0) {
     const re = res[c.body];
     return buildSearchResult(s, re, c, metamodel, sfields);
@@ -499,7 +498,7 @@ export function buildSearchResultByConfig<T, S extends Filter>(s: S, res: string
     return buildSearchResult(s, res, c, metamodel, sfields);
   }
 }
-export function buildSearchResult<T, S extends Filter>(s: S, res: string|SearchResult<T>|T[], c: SearchConfig, metamodel?: MetaModel, sfields?: string): SearchResult<T>|Promise<SearchResult<T>> {
+export function buildSearchResult<T, S extends Filter>(s: S, res: string|SearchResult<T>|T[], c?: SearchConfig, metamodel?: MetaModel, sfields?: string): SearchResult<T>|Promise<SearchResult<T>> {
   if (typeof res === 'string') {
     return fromCsv<T>(s, res, sfields);
   } else {
@@ -521,17 +520,17 @@ export function buildSearchResult<T, S extends Filter>(s: S, res: string|SearchR
       } else {
         const res2: any = {};
         if (c.list && c.list.length > 0) {
-          res2.list = res[c.list];
+          res2.list = (res as any)[c.list];
         } else {
           res2.list = res.list;
         }
         if (c.total && c.total.length > 0) {
-          res2.total = res[c.total];
+          res2.total = (res as any)[c.total];
         } else {
           res2.total = res.total;
         }
-        if (c.last && c.last.length > 0 && res[c.last]) {
-          res2.last = res[c.last];
+        if (c.last && c.last.length > 0 && (res as any)[c.last]) {
+          res2.last = (res as any)[c.last];
         }
         if (!metamodel) {
           return res2;
@@ -579,17 +578,17 @@ export class DiffClient<T, ID>  {
   }
   protected _ids: string[];
   protected model?: Attributes;
-  protected _metaModel: MetaModel;
+  protected _metaModel?: MetaModel;
   keys(): string[] {
     return this._ids;
   }
-  diff(id: ID, ctx?: any): Promise<DiffModel<T, ID>> {
+  diff(id: ID, ctx?: any): Promise<DiffModel<T, ID>|undefined|null> {
     const t = this;
     let url = t.serviceUrl + '/' + id + '/diff';
     if (t._ids && t._ids.length > 0 && typeof id === 'object') {
       url = t.serviceUrl;
       for (const name of t._ids) {
-        url = url + '/' + id[name];
+        url = url + '/' + (id as any)[name];
       }
       url = url + '/diff';
     }
@@ -666,7 +665,7 @@ export class ApprClient<ID> {
     if (t._keys && t._keys.length > 0 && typeof id === 'object') {
       url = t.serviceUrl;
       for (const name of t._keys) {
-        url = url + '/' + id[name];
+        url = url + '/' + (id as any)[name];
       }
       url = url + '/approve';
     }
@@ -695,7 +694,7 @@ export class ApprClient<ID> {
     if (t._keys && t._keys.length > 0 && typeof id === 'object') {
       url = t.serviceUrl;
       for (const name of t._keys) {
-        url = url + '/' + id[name];
+        url = url + '/' + (id as any)[name];
       }
       url = url + '/reject';
     }
@@ -736,7 +735,7 @@ export class DiffApprClient<T, ID> extends DiffClient<T, ID> {
   }
 }
 
-export class ViewSearchClient<T, ID, S extends Filter> extends SearchClient<T, S> {
+export class ViewSearchClient<T, ID, S extends Filter> extends SearchWebClient<T, S> {
   constructor(http: HttpRequest, serviceUrl: string, model?: Attributes|string[], config?: SearchConfig, ignoreDate?: boolean, searchGet?: boolean, metamodel?: MetaModel) {
     super(http, serviceUrl, model, metamodel, config, ignoreDate, searchGet);
     this.viewWebClient = new ViewClient<T, ID>(http, serviceUrl, model, ignoreDate, this._metamodel);
@@ -750,7 +749,7 @@ export class ViewSearchClient<T, ID, S extends Filter> extends SearchClient<T, S
   keys(): string[] {
     return this.viewWebClient.keys();
   }
-  metadata(): Attributes {
+  metadata(): Attributes|undefined {
     return this.viewWebClient.metadata();
   }
 
@@ -758,12 +757,12 @@ export class ViewSearchClient<T, ID, S extends Filter> extends SearchClient<T, S
     return this.viewWebClient.all(ctx);
   }
 
-  load(id: ID, ctx?: any): Promise<T> {
+  load(id: ID, ctx?: any): Promise<T|undefined|null> {
     return this.viewWebClient.load(id, ctx);
   }
 }
 
-export class GenericSearchClient<T, ID, R, S extends Filter> extends SearchClient<T, S> {
+export class GenericSearchClient<T, ID, R, S extends Filter> extends SearchWebClient<T, S> {
   constructor(http: HttpRequest, serviceUrl: string, model?: Attributes|string[], config?: SearchConfig&EditStatusConfig, ignoreDate?: boolean, searchGet?: boolean, metamodel?: MetaModel) {
     super(http, serviceUrl, model, metamodel, config, ignoreDate, searchGet);
     this.genericWebClient = new GenericClient<T, ID, R>(http, serviceUrl, model, config, ignoreDate, this._metamodel);
@@ -781,13 +780,13 @@ export class GenericSearchClient<T, ID, R, S extends Filter> extends SearchClien
   keys(): string[] {
     return this.genericWebClient.keys();
   }
-  metadata(): Attributes {
+  metadata(): Attributes|undefined {
     return this.genericWebClient.metadata();
   }
   all(ctx?: any): Promise<T[]> {
     return this.genericWebClient.all(ctx);
   }
-  load(id: ID, ctx?: any): Promise<T> {
+  load(id: ID, ctx?: any): Promise<T|undefined|null> {
     return this.genericWebClient.load(id, ctx);
   }
 
@@ -814,7 +813,7 @@ export class ViewSearchDiffApprClient<T, ID, S extends Filter> extends ViewSearc
     this.reject = this.reject.bind(this);
   }
   private diffWebClient: DiffApprClient<T, ID>;
-  diff(id: ID, ctx?: any): Promise<DiffModel<T, ID>> {
+  diff(id: ID, ctx?: any): Promise<DiffModel<T, ID>|undefined|null> {
     return this.diffWebClient.diff(id, ctx);
   }
   approve(id: ID, ctx?: any): Promise<number|string> {
@@ -834,7 +833,7 @@ export class GenericSearchDiffApprClient<T, ID, R, S extends Filter> extends Gen
     this.reject = this.reject.bind(this);
   }
   private diffWebClient: DiffApprClient<T, ID>;
-  diff(id: ID, ctx?: any): Promise<DiffModel<T, ID>> {
+  diff(id: ID, ctx?: any): Promise<DiffModel<T, ID>|undefined|null> {
     return this.diffWebClient.diff(id, ctx);
   }
   approve(id: ID, ctx?: any): Promise<number|string> {

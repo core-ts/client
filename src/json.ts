@@ -55,7 +55,7 @@ export interface Attributes {
 export interface MetaModel {
   attributes: Attributes;
   attributeName?: string;
-  keys?: string[];
+  keys: string[];
   dateFields?: string[];
   objectFields?: MetaModel[];
   arrayFields?: MetaModel[];
@@ -114,7 +114,7 @@ export function build(attributes: Attributes, ignoreDate?: boolean): MetaModel {
       }
     }
   }
-  const metadata: MetaModel = {attributes};
+  const metadata: MetaModel = {attributes, keys: primaryKeys};
   if (primaryKeys.length > 0) {
     metadata.keys = primaryKeys;
   }
@@ -145,10 +145,10 @@ export function buildKeys(attributes: Attributes): string[] {
   return pks;
 }
 
-const _rd = '/Date(';
-const _rn = /-?\d+/;
+const _datereg = '/Date(';
+const _re = /-?\d+/;
 
-function jsonToDate(obj: any, fields: string[]) {
+function jsonToDate(obj: any, fields?: string[]) {
   if (!obj || !fields) {
     return obj;
   }
@@ -162,8 +162,8 @@ function jsonToDate(obj: any, fields: string[]) {
   }
 }
 
-function toDate(v: any): Date {
-  if (!v || v === '') {
+function toDate(v: any): Date | null | undefined {
+  if (!v) {
     return null;
   }
   if (v instanceof Date) {
@@ -171,16 +171,20 @@ function toDate(v: any): Date {
   } else if (typeof v === 'number') {
     return new Date(v);
   }
-  const i = v.indexOf(_rd);
+  const i = v.indexOf(_datereg);
   if (i >= 0) {
-    const m = _rn.exec(v);
-    const d = parseInt(m[0], null);
-    return new Date(d);
+    const m = _re.exec(v);
+    if (m !== null) {
+      const d = parseInt(m[0], 10);
+      return new Date(d);
+    } else {
+      return null;
+    }
   } else {
     if (isNaN(v)) {
       return new Date(v);
     } else {
-      const d = parseInt(v, null);
+      const d = parseInt(v, 10);
       return new Date(d);
     }
   }
@@ -192,19 +196,19 @@ export function json(obj: any, meta?: MetaModel): any {
   }
   jsonToDate(obj, meta.dateFields);
   if (meta.objectFields) {
-    for (const objectField of meta.objectFields) {
-      if (obj[objectField.attributeName]) {
-        json(obj[objectField.attributeName], objectField);
+    for (const of of meta.objectFields) {
+      if (of.attributeName && obj[of.attributeName]) {
+        json(obj[of.attributeName], of);
       }
     }
   }
   if (meta.arrayFields) {
-    for (const arrayField of meta.arrayFields) {
-      if (obj[arrayField.attributeName]) {
-        const arr = obj[arrayField.attributeName];
+    for (const af of meta.arrayFields) {
+      if (af.attributeName && obj[af.attributeName]) {
+        const arr = obj[af.attributeName];
         if (Array.isArray(arr)) {
           for (const a of arr) {
-            json(a, arrayField);
+            json(a, af);
           }
         }
       }
