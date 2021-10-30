@@ -669,7 +669,7 @@ export class ApprClient<ID> {
       }
       url = url + '/approve';
     }
-    return t.http.get<number|string>(url).then(r => r).catch(err => {
+    return t.http.patch<number|string>(url, '').then(r => r).catch(err => {
       if (!t.diffStatus) {
         throw err;
       }
@@ -698,7 +698,7 @@ export class ApprClient<ID> {
       }
       url = url + '/reject';
     }
-    return t.http.get<number|string>(url).then(r => r).catch(err => {
+    return t.http.patch<number|string>(url, '').then(r => r).catch(err => {
       if (!t.diffStatus) {
         throw err;
       }
