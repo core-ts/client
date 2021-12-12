@@ -1,7 +1,7 @@
 {
   "name": "web-clients",
-  "version": "0.1.18",
-  "description": "Web Client",
+  "version": "0.1.19",
+  "description": "Web Clients",
   "main": "./lib/index.js",
   "types": "./src/index.ts",
   "scripts": {
@@ -17,7 +17,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git@github.com/core-ts/web-clients"
+    "url": "git@github.com/core-ts/client"
   },
   "keywords": [
     "crud",
