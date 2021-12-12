@@ -1,5 +1,7 @@
 import {Attributes, build, DiffStatusConfig, EditStatusConfig, json, jsonArray, MetaModel, resources, SearchConfig} from './json';
 
+export * from './json';
+
 // tslint:disable-next-line:no-empty-interface
 export interface Filter {
   // limit?: number;
@@ -843,3 +845,6 @@ export class GenericSearchDiffApprClient<T, ID, R, S extends Filter> extends Gen
     return this.diffWebClient.reject(id, ctx);
   }
 }
+
+export const SearchClient = ViewSearchClient;
+export const Client = GenericSearchClient;
