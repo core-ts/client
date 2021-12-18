@@ -13,6 +13,19 @@ export interface SearchResult<T> {
   nextPageToken?: string;
   last?: boolean;
 }
+export interface ErrorMessage {
+  field: string;
+  code: string;
+  param?: string|number|Date;
+  message?: string;
+}
+export interface ResultInfo<T> {
+  status: number|string;
+  errors?: ErrorMessage[];
+  value?: T;
+  message?: string;
+}
+export type Result<T> = number | ResultInfo<T>;
 
 export function param(obj: any, fields?: string, excluding?: string): string {
   const ks = Object.keys(obj);
@@ -230,7 +243,7 @@ export class ViewClient<T, ID> {
     });
   }
 
-  load(id: ID, ctx?: any): Promise<T|null|undefined> {
+  load(id: ID, ctx?: any): Promise<T|null> {
     const t = this;
     let url = t.serviceUrl + '/' + id;
     if (t._keys && t._keys.length > 0 && typeof id === 'object') {
@@ -254,7 +267,7 @@ export class ViewClient<T, ID> {
   }
 }
 
-export class GenericClient<T, ID, R> extends ViewClient<T, ID> {
+export class CRUDClient<T, ID, R> extends ViewClient<T, ID> {
   constructor(http: HttpRequest, serviceUrl: string, pmodel?: Attributes|string[], public status?: EditStatusConfig, ignoreDate?: boolean, metamodel?: MetaModel) {
     super(http, serviceUrl, pmodel, ignoreDate, metamodel);
     this.formatResultInfo = this.formatResultInfo.bind(this);
@@ -400,7 +413,11 @@ export class GenericClient<T, ID, R> extends ViewClient<T, ID> {
     });
   }
 }
-
+export class GenericClient<T, ID> extends CRUDClient<T, ID, Result<T>> {
+  constructor(http: HttpRequest, serviceUrl: string, pmodel?: Attributes|string[], public status?: EditStatusConfig, ignoreDate?: boolean, metamodel?: MetaModel) {
+    super(http, serviceUrl, pmodel, status, ignoreDate, metamodel);
+  }
+}
 export class SearchWebClient<T, S extends Filter> {
   constructor(protected http: HttpRequest, protected serviceUrl: string, pmodel?: Attributes|string[], metaModel?: MetaModel, public config?: SearchConfig, ignoreDate?: boolean, protected searchGet?: boolean) {
     this.formatSearch = this.formatSearch.bind(this);
@@ -759,15 +776,15 @@ export class ViewSearchClient<T, ID, S extends Filter> extends SearchWebClient<T
     return this.viewWebClient.all(ctx);
   }
 
-  load(id: ID, ctx?: any): Promise<T|null|undefined> {
+  load(id: ID, ctx?: any): Promise<T|null> {
     return this.viewWebClient.load(id, ctx);
   }
 }
-
+export const SearchClient = ViewSearchClient;
 export class GenericSearchClient<T, ID, R, S extends Filter> extends SearchWebClient<T, S> {
   constructor(http: HttpRequest, serviceUrl: string, model?: Attributes|string[], config?: SearchConfig&EditStatusConfig, ignoreDate?: boolean, searchGet?: boolean, metamodel?: MetaModel) {
     super(http, serviceUrl, model, metamodel, config, ignoreDate, searchGet);
-    this.genericWebClient = new GenericClient<T, ID, R>(http, serviceUrl, model, config, ignoreDate, this._metamodel);
+    this.genericWebClient = new CRUDClient<T, ID, R>(http, serviceUrl, model, config, ignoreDate, this._metamodel);
     this.metadata = this.metadata.bind(this);
     this.keys = this.keys.bind(this);
     this.all = this.all.bind(this);
@@ -777,7 +794,7 @@ export class GenericSearchClient<T, ID, R, S extends Filter> extends SearchWebCl
     this.patch = this.patch.bind(this);
     this.delete = this.delete.bind(this);
   }
-  protected genericWebClient: GenericClient<T, ID, R>;
+  protected genericWebClient: CRUDClient<T, ID, R>;
 
   keys(): string[] {
     return this.genericWebClient.keys();
@@ -788,7 +805,7 @@ export class GenericSearchClient<T, ID, R, S extends Filter> extends SearchWebCl
   all(ctx?: any): Promise<T[]> {
     return this.genericWebClient.all(ctx);
   }
-  load(id: ID, ctx?: any): Promise<T|null|undefined> {
+  load(id: ID, ctx?: any): Promise<T|null> {
     return this.genericWebClient.load(id, ctx);
   }
 
@@ -805,7 +822,11 @@ export class GenericSearchClient<T, ID, R, S extends Filter> extends SearchWebCl
     return this.genericWebClient.delete(id, ctx);
   }
 }
-
+export class Client<T, ID, F extends Filter> extends GenericSearchClient<T, ID, Result<T>, F> {
+  constructor(http: HttpRequest, serviceUrl: string, model?: Attributes|string[], config?: SearchConfig&EditStatusConfig, ignoreDate?: boolean, searchGet?: boolean, metamodel?: MetaModel) {
+    super(http, serviceUrl, model, config, ignoreDate, searchGet, metamodel);
+  }
+}
 export class ViewSearchDiffApprClient<T, ID, S extends Filter> extends ViewSearchClient<T, ID, S> {
   constructor(http: HttpRequest, serviceUrl: string, model?: Attributes|string[], config?: SearchConfig&DiffStatusConfig, ignoreDate?: boolean, searchGet?: boolean, metamodel?: MetaModel) {
     super(http, serviceUrl, model, config, ignoreDate, searchGet, metamodel);
@@ -825,8 +846,7 @@ export class ViewSearchDiffApprClient<T, ID, S extends Filter> extends ViewSearc
     return this.diffWebClient.reject(id, ctx);
   }
 }
-
-export class GenericSearchDiffApprClient<T, ID, R, S extends Filter> extends GenericSearchClient<T, ID, R, S> {
+export class CRUDSearchDiffApprClient<T, ID, R, S extends Filter> extends GenericSearchClient<T, ID, R, S> {
   constructor(http: HttpRequest, serviceUrl: string, model?: Attributes|string[], config?: SearchConfig&EditStatusConfig&DiffStatusConfig, ignoreDate?: boolean, searchGet?: boolean, metamodel?: MetaModel) {
     super(http, serviceUrl, model, config, ignoreDate, searchGet, metamodel);
     this.diffWebClient = new DiffApprClient(http, serviceUrl, model, config, ignoreDate, this._metamodel);
@@ -845,6 +865,8 @@ export class GenericSearchDiffApprClient<T, ID, R, S extends Filter> extends Gen
     return this.diffWebClient.reject(id, ctx);
   }
 }
-
-export const SearchClient = ViewSearchClient;
-export const Client = GenericSearchClient;
+export class GenericSearchDiffApprClient<T, ID, S extends Filter> extends CRUDSearchDiffApprClient<T, ID, Result<T>, S> {
+  constructor(http: HttpRequest, serviceUrl: string, model?: Attributes|string[], config?: SearchConfig&EditStatusConfig&DiffStatusConfig, ignoreDate?: boolean, searchGet?: boolean, metamodel?: MetaModel) {
+    super(http, serviceUrl, model, config, ignoreDate, searchGet, metamodel);
+  }
+}
