@@ -353,7 +353,7 @@ export class CRUDClient<T, ID, R> extends ViewClient<T, ID> {
     });
   }
 
-  patch(obj: T, ctx?: any): Promise<R> {
+  patch(obj: Partial<T>, ctx?: any): Promise<R> {
     const t = this;
     let url = t.serviceUrl;
     const ks = t.keys();
