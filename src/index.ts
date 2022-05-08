@@ -1,4 +1,4 @@
-import {Attributes, build, DiffStatusConfig, EditStatusConfig, json, jsonArray, MetaModel, resources, SearchConfig} from './json';
+import { Attributes, build, DiffStatusConfig, EditStatusConfig, json, jsonArray, MetaModel, resources, SearchConfig } from './json';
 
 export * from './json';
 
@@ -16,11 +16,11 @@ export interface SearchResult<T> {
 export interface ErrorMessage {
   field: string;
   code: string;
-  param?: string|number|Date;
+  param?: string | number | Date;
   message?: string;
 }
 export interface ResultInfo<T> {
-  status: number|string;
+  status: number | string;
   errors?: ErrorMessage[];
   value?: T;
   message?: string;
@@ -29,7 +29,7 @@ export type Result<T> = number | ResultInfo<T>;
 
 export function param(obj: any, fields?: string, excluding?: string): string {
   const ks = Object.keys(obj);
-  const arrs = [];
+  const arrs: string[] = [];
   if (!fields || fields.length === 0) {
     fields = 'fields';
   }
@@ -49,7 +49,7 @@ export function param(obj: any, fields?: string, excluding?: string): string {
         for (const k2 of t2) {
           const v = t2[k2];
           if (Array.isArray(v)) {
-            const arr = [];
+            const arr: string[] = [];
             for (const y of v) {
               if (y) {
                 if (typeof y === 'string') {
@@ -71,7 +71,7 @@ export function param(obj: any, fields?: string, excluding?: string): string {
     } else {
       const v = obj[key];
       if (Array.isArray(v)) {
-        const arr = [];
+        const arr: string[] = [];
         for (const y of v) {
           if (y) {
             if (typeof y === 'string') {
@@ -100,11 +100,11 @@ export interface HttpOptionsService {
   getHttpOptions(): { headers?: Headers };
 }
 export interface HttpRequest {
-  get<T>(url: string, options?: {headers?: Headers}): Promise<T>;
-  delete<T>(url: string, options?: {headers?: Headers}): Promise<T>;
-  post<T>(url: string, obj: any, options?: {headers?: Headers}): Promise<T>;
-  put<T>(url: string, obj: any, options?: {headers?: Headers}): Promise<T>;
-  patch<T>(url: string, obj: any, options?: {headers?: Headers}): Promise<T>;
+  get<T>(url: string, options?: { headers?: Headers }): Promise<T>;
+  delete<T>(url: string, options?: { headers?: Headers }): Promise<T>;
+  post<T>(url: string, obj: any, options?: { headers?: Headers }): Promise<T>;
+  put<T>(url: string, obj: any, options?: { headers?: Headers }): Promise<T>;
+  patch<T>(url: string, obj: any, options?: { headers?: Headers }): Promise<T>;
 }
 
 export class DefaultCsvService {
@@ -114,8 +114,8 @@ export class DefaultCsvService {
   }
   private _csv: any;
   fromString(value: string): Promise<string[][]> {
-    return new Promise( resolve => {
-      this._csv({noheader: true, output: 'csv'}).fromString(value).then((v: string[][] | PromiseLike<string[][]>) => resolve(v));
+    return new Promise(resolve => {
+      this._csv({ noheader: true, output: 'csv' }).fromString(value).then((v: string[][] | PromiseLike<string[][]>) => resolve(v));
     });
   }
 }
@@ -168,14 +168,14 @@ export function optimizeFilter<S extends Filter>(s: S, page?: string, limit?: st
 }
 export function fromCsv<T>(m: Filter, csv: string, sfields?: string): Promise<SearchResult<T>> {
   return fromString(csv).then(items => {
-    const arr = [];
+    const arr: any[] = [];
     if (!sfields || sfields.length === 0) {
       sfields = 'fields';
     }
     const fields: string[] = (m as any)[sfields];
     if (Array.isArray(fields)) {
       for (let i = 1; i < items.length; i++) {
-        const obj: any =  {};
+        const obj: any = {};
         const len = Math.min(fields.length, items[i].length);
         for (let j = 0; j < len; j++) {
           obj[fields[j]] = items[i][j];
@@ -194,9 +194,9 @@ export function fromCsv<T>(m: Filter, csv: string, sfields?: string): Promise<Se
     return x;
   });
 }
-
+// tslint:disable-next-line:max-classes-per-file
 export class ViewClient<T, ID> {
-  constructor(protected http: HttpRequest, protected serviceUrl: string, pmodel?: Attributes|string[], ignoreDate?: boolean, metamodel?: MetaModel) {
+  constructor(protected http: HttpRequest, protected serviceUrl: string, pmodel?: Attributes | string[], ignoreDate?: boolean, metamodel?: MetaModel) {
     this.metadata = this.metadata.bind(this);
     this.keys = this.keys.bind(this);
     this.all = this.all.bind(this);
@@ -229,7 +229,7 @@ export class ViewClient<T, ID> {
   keys(): string[] {
     return this._keys;
   }
-  metadata(): Attributes|undefined {
+  metadata(): Attributes | undefined {
     return this.attributes;
   }
 
@@ -243,7 +243,7 @@ export class ViewClient<T, ID> {
     });
   }
 
-  load(id: ID, ctx?: any): Promise<T|null> {
+  load(id: ID, ctx?: any): Promise<T | null> {
     const t = this;
     let url = t.serviceUrl + '/' + id;
     if (t._keys && t._keys.length > 0 && typeof id === 'object') {
@@ -258,7 +258,7 @@ export class ViewClient<T, ID> {
       }
       return json(obj, t._metamodel);
     }).catch(err => {
-      const data = (err &&  err.response) ? err.response : err;
+      const data = (err && err.response) ? err.response : err;
       if (data && (data.status === 404 || data.status === 410)) {
         return null;
       }
@@ -266,9 +266,9 @@ export class ViewClient<T, ID> {
     });
   }
 }
-
+// tslint:disable-next-line:max-classes-per-file
 export class CRUDClient<T, ID, R> extends ViewClient<T, ID> {
-  constructor(http: HttpRequest, serviceUrl: string, pmodel?: Attributes|string[], public status?: EditStatusConfig, ignoreDate?: boolean, metamodel?: MetaModel) {
+  constructor(http: HttpRequest, serviceUrl: string, pmodel?: Attributes | string[], public status?: EditStatusConfig, ignoreDate?: boolean, metamodel?: MetaModel) {
     super(http, serviceUrl, pmodel, ignoreDate, metamodel);
     this.formatResultInfo = this.formatResultInfo.bind(this);
     this.insert = this.insert.bind(this);
@@ -299,7 +299,7 @@ export class CRUDClient<T, ID, R> extends ViewClient<T, ID> {
       return t.formatResultInfo(res, ctx);
     }).catch(err => {
       if (err) {
-        const data = (err &&  err.response) ? err.response : err;
+        const data = (err && err.response) ? err.response : err;
         if (data.status === 404 || data.status === 410) {
           let x: any = 0;
           if (t.status && t.status.not_found) {
@@ -334,7 +334,7 @@ export class CRUDClient<T, ID, R> extends ViewClient<T, ID> {
       return t.formatResultInfo(res, ctx);
     }).catch(err => {
       if (err) {
-        const data = (err &&  err.response) ? err.response : err;
+        const data = (err && err.response) ? err.response : err;
         if (data.status === 404 || data.status === 410) {
           let x: any = 0;
           if (t.status && t.status.not_found) {
@@ -369,7 +369,7 @@ export class CRUDClient<T, ID, R> extends ViewClient<T, ID> {
       return t.formatResultInfo(res, ctx);
     }).catch(err => {
       if (err) {
-        const data = (err &&  err.response) ? err.response : err;
+        const data = (err && err.response) ? err.response : err;
         if (data.status === 404 || data.status === 410) {
           let x: any = 0;
           if (t.status && t.status.not_found) {
@@ -402,7 +402,7 @@ export class CRUDClient<T, ID, R> extends ViewClient<T, ID> {
     }
     return t.http.delete<number>(url).then(r => r).catch(err => {
       if (err) {
-        const data = (err &&  err.response) ? err.response : err;
+        const data = (err && err.response) ? err.response : err;
         if (data && (data.status === 404 || data.status === 410)) {
           return 0;
         } else if (data.status === 409) {
@@ -413,13 +413,15 @@ export class CRUDClient<T, ID, R> extends ViewClient<T, ID> {
     });
   }
 }
+// tslint:disable-next-line:max-classes-per-file
 export class GenericClient<T, ID> extends CRUDClient<T, ID, Result<T>> {
-  constructor(http: HttpRequest, serviceUrl: string, pmodel?: Attributes|string[], public status?: EditStatusConfig, ignoreDate?: boolean, metamodel?: MetaModel) {
+  constructor(http: HttpRequest, serviceUrl: string, pmodel?: Attributes | string[], public status?: EditStatusConfig, ignoreDate?: boolean, metamodel?: MetaModel) {
     super(http, serviceUrl, pmodel, status, ignoreDate, metamodel);
   }
 }
+// tslint:disable-next-line:max-classes-per-file
 export class SearchWebClient<T, S extends Filter> {
-  constructor(protected http: HttpRequest, protected serviceUrl: string, pmodel?: Attributes|string[], metaModel?: MetaModel, public config?: SearchConfig, ignoreDate?: boolean, protected searchGet?: boolean) {
+  constructor(protected http: HttpRequest, protected serviceUrl: string, pmodel?: Attributes | string[], metaModel?: MetaModel, public config?: SearchConfig, ignoreDate?: boolean, protected searchGet?: boolean) {
     this.formatSearch = this.formatSearch.bind(this);
     this.makeUrlParameters = this.makeUrlParameters.bind(this);
     this.postOnly = this.postOnly.bind(this);
@@ -456,7 +458,7 @@ export class SearchWebClient<T, S extends Filter> {
   keys(): string[] {
     return this._keys;
   }
-  search(s: S, limit?: number, offset?: number|string, fields?: string[]): Promise<SearchResult<T>> {
+  search(s: S, limit?: number, offset?: number | string, fields?: string[]): Promise<SearchResult<T>> {
     const t = this;
     t.formatSearch(s);
     const c = t.config;
@@ -494,22 +496,22 @@ export class SearchWebClient<T, S extends Filter> {
     const keys2 = Object.keys(s1);
     if (keys2.length === 0) {
       const searchUrl = (t.searchGet ? t.serviceUrl + '/search' : t.serviceUrl);
-      return t.http.get<string|SearchResult<T>>(searchUrl).then(res => buildSearchResultByConfig(s, res, c, t._metamodel, sf));
+      return t.http.get<string | SearchResult<T>>(searchUrl).then(res => buildSearchResultByConfig(s, res, c, t._metamodel, sf));
     } else {
       const excluding = c ? c.excluding : undefined;
       const params = t.makeUrlParameters(s1, sf, excluding);
       let searchUrl = (t.searchGet ? t.serviceUrl + '/search' : t.serviceUrl);
       searchUrl = searchUrl + '?' + params;
       if (searchUrl.length <= 255) {
-        return t.http.get<string|SearchResult<T>>(searchUrl).then(res => buildSearchResultByConfig(s, res, c, t._metamodel, sf));
+        return t.http.get<string | SearchResult<T>>(searchUrl).then(res => buildSearchResultByConfig(s, res, c, t._metamodel, sf));
       } else {
         const postSearchUrl = t.serviceUrl + '/search';
-        return t.http.post<string|SearchResult<T>>(postSearchUrl, s1).then(res => buildSearchResultByConfig(s, res, c, t._metamodel, sf));
+        return t.http.post<string | SearchResult<T>>(postSearchUrl, s1).then(res => buildSearchResultByConfig(s, res, c, t._metamodel, sf));
       }
     }
   }
 }
-export function buildSearchResultByConfig<T, S extends Filter>(s: S, res: string|SearchResult<T>|T[]|any, c?: SearchConfig, metamodel?: MetaModel, sfields?: string): SearchResult<T>|Promise<SearchResult<T>> {
+export function buildSearchResultByConfig<T, S extends Filter>(s: S, res: string | SearchResult<T> | T[] | any, c?: SearchConfig, metamodel?: MetaModel, sfields?: string): SearchResult<T> | Promise<SearchResult<T>> {
   if (c && c.body && c.body.length > 0) {
     const re = res[c.body];
     return buildSearchResult(s, re, c, metamodel, sfields);
@@ -517,7 +519,7 @@ export function buildSearchResultByConfig<T, S extends Filter>(s: S, res: string
     return buildSearchResult(s, res, c, metamodel, sfields);
   }
 }
-export function buildSearchResult<T, S extends Filter>(s: S, res: string|SearchResult<T>|T[], c?: SearchConfig, metamodel?: MetaModel, sfields?: string): SearchResult<T>|Promise<SearchResult<T>> {
+export function buildSearchResult<T, S extends Filter>(s: S, res: string | SearchResult<T> | T[], c?: SearchConfig, metamodel?: MetaModel, sfields?: string): SearchResult<T> | Promise<SearchResult<T>> {
   if (typeof res === 'string') {
     return fromCsv<T>(s, res, sfields);
   } else {
@@ -571,8 +573,9 @@ export interface DiffModel<T, ID> {
   origin?: T;
   value: T;
 }
+// tslint:disable-next-line:max-classes-per-file
 export class DiffClient<T, ID>  {
-  constructor(protected http: HttpRequest, protected serviceUrl: string, pmodel?: Attributes|string[], ignoreDate?: boolean, metaModel?: MetaModel) {
+  constructor(protected http: HttpRequest, protected serviceUrl: string, pmodel?: Attributes | string[], ignoreDate?: boolean, metaModel?: MetaModel) {
     this.diff = this.diff.bind(this);
     if (metaModel) {
       this._metaModel = metaModel;
@@ -601,7 +604,7 @@ export class DiffClient<T, ID>  {
   keys(): string[] {
     return this._ids;
   }
-  diff(id: ID, ctx?: any): Promise<DiffModel<T, ID>|undefined|null> {
+  diff(id: ID, ctx?: any): Promise<DiffModel<T, ID> | undefined | null> {
     const t = this;
     let url = t.serviceUrl + '/' + id + '/diff';
     if (t._ids && t._ids.length > 0 && typeof id === 'object') {
@@ -619,7 +622,7 @@ export class DiffClient<T, ID>  {
         res.value = {};
       }
       if (typeof res.value === 'string') {
-          res.value = JSON.parse(res.value);
+        res.value = JSON.parse(res.value);
       }
       if (!res.origin) {
         res.origin = {};
@@ -635,7 +638,7 @@ export class DiffClient<T, ID>  {
       }
       return res;
     }).catch(err => {
-      const data = (err &&  err.response) ? err.response : err;
+      const data = (err && err.response) ? err.response : err;
       if (data && (data.status === 404 || data.status === 410)) {
         return null;
       } else {
@@ -644,9 +647,9 @@ export class DiffClient<T, ID>  {
     });
   }
 }
-
+// tslint:disable-next-line:max-classes-per-file
 export class ApprClient<ID> {
-  constructor(protected http: HttpRequest, protected serviceUrl: string, pmodel?: Attributes|string[], public diffStatus?: DiffStatusConfig, ignoreDate?: boolean, metaModel?: MetaModel) {
+  constructor(protected http: HttpRequest, protected serviceUrl: string, pmodel?: Attributes | string[], public diffStatus?: DiffStatusConfig, ignoreDate?: boolean, metaModel?: MetaModel) {
     this.approve = this.approve.bind(this);
     this.reject = this.reject.bind(this);
     this.keys = this.keys.bind(this);
@@ -678,7 +681,7 @@ export class ApprClient<ID> {
     return this._keys;
   }
 
-  approve(id: ID, ctx?: any): Promise<number|string> {
+  approve(id: ID, ctx?: any): Promise<number | string> {
     const t = this;
     let url = t.serviceUrl + '/' + id + '/approve';
     if (t._keys && t._keys.length > 0 && typeof id === 'object') {
@@ -688,12 +691,12 @@ export class ApprClient<ID> {
       }
       url = url + '/approve';
     }
-    return t.http.patch<number|string>(url, '').then(r => r).catch(err => {
+    return t.http.patch<number | string>(url, '').then(r => r).catch(err => {
       if (!t.diffStatus) {
         throw err;
       }
       if (err) {
-        const data = (err &&  err.response) ? err.response : err;
+        const data = (err && err.response) ? err.response : err;
         if (data.status === 404 || data.status === 410) {
           return (t.diffStatus.not_found ? t.diffStatus.not_found : 0);
         } else if (data.status === 409) {
@@ -707,7 +710,7 @@ export class ApprClient<ID> {
       }
     });
   }
-  reject(id: ID, ctx?: any): Promise<number|string> {
+  reject(id: ID, ctx?: any): Promise<number | string> {
     const t = this;
     let url = t.serviceUrl + '/' + id + '/reject';
     if (t._keys && t._keys.length > 0 && typeof id === 'object') {
@@ -717,12 +720,12 @@ export class ApprClient<ID> {
       }
       url = url + '/reject';
     }
-    return t.http.patch<number|string>(url, '').then(r => r).catch(err => {
+    return t.http.patch<number | string>(url, '').then(r => r).catch(err => {
       if (!t.diffStatus) {
         throw err;
       }
       if (err) {
-        const data = (err &&  err.response) ? err.response : err;
+        const data = (err && err.response) ? err.response : err;
         if (data.status === 404 || data.status === 410) {
           return (t.diffStatus.not_found ? t.diffStatus.not_found : 0);
         } else if (data.status === 409) {
@@ -737,25 +740,25 @@ export class ApprClient<ID> {
     });
   }
 }
-
+// tslint:disable-next-line:max-classes-per-file
 export class DiffApprClient<T, ID> extends DiffClient<T, ID> {
-  constructor(protected http: HttpRequest, protected serviceUrl: string, model?: Attributes|string[], diffStatus?: DiffStatusConfig, ignoreDate?: boolean, metaModel?: MetaModel) {
+  constructor(protected http: HttpRequest, protected serviceUrl: string, model?: Attributes | string[], diffStatus?: DiffStatusConfig, ignoreDate?: boolean, metaModel?: MetaModel) {
     super(http, serviceUrl, model, ignoreDate, metaModel);
     this.apprWebClient = new ApprClient(http, serviceUrl, model, diffStatus, ignoreDate, this._metaModel);
     this.approve = this.approve.bind(this);
     this.reject = this.reject.bind(this);
   }
   private apprWebClient: ApprClient<ID>;
-  approve(id: ID, ctx?: any): Promise<number|string> {
+  approve(id: ID, ctx?: any): Promise<number | string> {
     return this.apprWebClient.approve(id, ctx);
   }
-  reject(id: ID, ctx?: any): Promise<number|string> {
+  reject(id: ID, ctx?: any): Promise<number | string> {
     return this.apprWebClient.reject(id, ctx);
   }
 }
-
+// tslint:disable-next-line:max-classes-per-file
 export class ViewSearchClient<T, ID, S extends Filter> extends SearchWebClient<T, S> {
-  constructor(http: HttpRequest, serviceUrl: string, model?: Attributes|string[], config?: SearchConfig, ignoreDate?: boolean, searchGet?: boolean, metamodel?: MetaModel) {
+  constructor(http: HttpRequest, serviceUrl: string, model?: Attributes | string[], config?: SearchConfig, ignoreDate?: boolean, searchGet?: boolean, metamodel?: MetaModel) {
     super(http, serviceUrl, model, metamodel, config, ignoreDate, searchGet);
     this.viewWebClient = new ViewClient<T, ID>(http, serviceUrl, model, ignoreDate, this._metamodel);
     this.metadata = this.metadata.bind(this);
@@ -768,7 +771,7 @@ export class ViewSearchClient<T, ID, S extends Filter> extends SearchWebClient<T
   keys(): string[] {
     return this.viewWebClient.keys();
   }
-  metadata(): Attributes|undefined {
+  metadata(): Attributes | undefined {
     return this.viewWebClient.metadata();
   }
 
@@ -776,13 +779,14 @@ export class ViewSearchClient<T, ID, S extends Filter> extends SearchWebClient<T
     return this.viewWebClient.all(ctx);
   }
 
-  load(id: ID, ctx?: any): Promise<T|null> {
+  load(id: ID, ctx?: any): Promise<T | null> {
     return this.viewWebClient.load(id, ctx);
   }
 }
 export const SearchClient = ViewSearchClient;
+// tslint:disable-next-line:max-classes-per-file
 export class GenericSearchClient<T, ID, R, S extends Filter> extends SearchWebClient<T, S> {
-  constructor(http: HttpRequest, serviceUrl: string, model?: Attributes|string[], config?: SearchConfig&EditStatusConfig, ignoreDate?: boolean, searchGet?: boolean, metamodel?: MetaModel) {
+  constructor(http: HttpRequest, serviceUrl: string, model?: Attributes | string[], config?: SearchConfig & EditStatusConfig, ignoreDate?: boolean, searchGet?: boolean, metamodel?: MetaModel) {
     super(http, serviceUrl, model, metamodel, config, ignoreDate, searchGet);
     this.genericWebClient = new CRUDClient<T, ID, R>(http, serviceUrl, model, config, ignoreDate, this._metamodel);
     this.metadata = this.metadata.bind(this);
@@ -799,13 +803,13 @@ export class GenericSearchClient<T, ID, R, S extends Filter> extends SearchWebCl
   keys(): string[] {
     return this.genericWebClient.keys();
   }
-  metadata(): Attributes|undefined {
+  metadata(): Attributes | undefined {
     return this.genericWebClient.metadata();
   }
   all(ctx?: any): Promise<T[]> {
     return this.genericWebClient.all(ctx);
   }
-  load(id: ID, ctx?: any): Promise<T|null> {
+  load(id: ID, ctx?: any): Promise<T | null> {
     return this.genericWebClient.load(id, ctx);
   }
 
@@ -822,13 +826,15 @@ export class GenericSearchClient<T, ID, R, S extends Filter> extends SearchWebCl
     return this.genericWebClient.delete(id, ctx);
   }
 }
+// tslint:disable-next-line:max-classes-per-file
 export class Client<T, ID, F extends Filter> extends GenericSearchClient<T, ID, Result<T>, F> {
-  constructor(http: HttpRequest, serviceUrl: string, model?: Attributes|string[], config?: SearchConfig&EditStatusConfig, ignoreDate?: boolean, searchGet?: boolean, metamodel?: MetaModel) {
+  constructor(http: HttpRequest, serviceUrl: string, model?: Attributes | string[], config?: SearchConfig & EditStatusConfig, ignoreDate?: boolean, searchGet?: boolean, metamodel?: MetaModel) {
     super(http, serviceUrl, model, config, ignoreDate, searchGet, metamodel);
   }
 }
+// tslint:disable-next-line:max-classes-per-file
 export class ViewSearchDiffApprClient<T, ID, S extends Filter> extends ViewSearchClient<T, ID, S> {
-  constructor(http: HttpRequest, serviceUrl: string, model?: Attributes|string[], config?: SearchConfig&DiffStatusConfig, ignoreDate?: boolean, searchGet?: boolean, metamodel?: MetaModel) {
+  constructor(http: HttpRequest, serviceUrl: string, model?: Attributes | string[], config?: SearchConfig & DiffStatusConfig, ignoreDate?: boolean, searchGet?: boolean, metamodel?: MetaModel) {
     super(http, serviceUrl, model, config, ignoreDate, searchGet, metamodel);
     this.diffWebClient = new DiffApprClient(http, serviceUrl, model, config, ignoreDate, this._metamodel);
     this.diff = this.diff.bind(this);
@@ -836,18 +842,19 @@ export class ViewSearchDiffApprClient<T, ID, S extends Filter> extends ViewSearc
     this.reject = this.reject.bind(this);
   }
   private diffWebClient: DiffApprClient<T, ID>;
-  diff(id: ID, ctx?: any): Promise<DiffModel<T, ID>|undefined|null> {
+  diff(id: ID, ctx?: any): Promise<DiffModel<T, ID> | undefined | null> {
     return this.diffWebClient.diff(id, ctx);
   }
-  approve(id: ID, ctx?: any): Promise<number|string> {
+  approve(id: ID, ctx?: any): Promise<number | string> {
     return this.diffWebClient.approve(id, ctx);
   }
-  reject(id: ID, ctx?: any): Promise<number|string> {
+  reject(id: ID, ctx?: any): Promise<number | string> {
     return this.diffWebClient.reject(id, ctx);
   }
 }
+// tslint:disable-next-line:max-classes-per-file
 export class CRUDSearchDiffApprClient<T, ID, R, S extends Filter> extends GenericSearchClient<T, ID, R, S> {
-  constructor(http: HttpRequest, serviceUrl: string, model?: Attributes|string[], config?: SearchConfig&EditStatusConfig&DiffStatusConfig, ignoreDate?: boolean, searchGet?: boolean, metamodel?: MetaModel) {
+  constructor(http: HttpRequest, serviceUrl: string, model?: Attributes | string[], config?: SearchConfig & EditStatusConfig & DiffStatusConfig, ignoreDate?: boolean, searchGet?: boolean, metamodel?: MetaModel) {
     super(http, serviceUrl, model, config, ignoreDate, searchGet, metamodel);
     this.diffWebClient = new DiffApprClient(http, serviceUrl, model, config, ignoreDate, this._metamodel);
     this.diff = this.diff.bind(this);
@@ -855,18 +862,42 @@ export class CRUDSearchDiffApprClient<T, ID, R, S extends Filter> extends Generi
     this.reject = this.reject.bind(this);
   }
   private diffWebClient: DiffApprClient<T, ID>;
-  diff(id: ID, ctx?: any): Promise<DiffModel<T, ID>|undefined|null> {
+  diff(id: ID, ctx?: any): Promise<DiffModel<T, ID> | undefined | null> {
     return this.diffWebClient.diff(id, ctx);
   }
-  approve(id: ID, ctx?: any): Promise<number|string> {
+  approve(id: ID, ctx?: any): Promise<number | string> {
     return this.diffWebClient.approve(id, ctx);
   }
-  reject(id: ID, ctx?: any): Promise<number|string> {
+  reject(id: ID, ctx?: any): Promise<number | string> {
     return this.diffWebClient.reject(id, ctx);
   }
 }
+// tslint:disable-next-line:max-classes-per-file
 export class GenericSearchDiffApprClient<T, ID, S extends Filter> extends CRUDSearchDiffApprClient<T, ID, Result<T>, S> {
-  constructor(http: HttpRequest, serviceUrl: string, model?: Attributes|string[], config?: SearchConfig&EditStatusConfig&DiffStatusConfig, ignoreDate?: boolean, searchGet?: boolean, metamodel?: MetaModel) {
+  constructor(http: HttpRequest, serviceUrl: string, model?: Attributes | string[], config?: SearchConfig & EditStatusConfig & DiffStatusConfig, ignoreDate?: boolean, searchGet?: boolean, metamodel?: MetaModel) {
     super(http, serviceUrl, model, config, ignoreDate, searchGet, metamodel);
+  }
+}
+// tslint:disable-next-line:max-classes-per-file
+export class QueryClient<T> {
+  keyword: string;
+  max: string;
+  constructor(public http: HttpRequest, public url: string, keyword?: string, max?: string) {
+    this.keyword = (keyword && keyword.length > 0 ? keyword : 'keyword');
+    this.max = (max && max.length > 0 ? max : 'max');
+    this.query = this.query.bind(this);
+  }
+  query(keyword: string, max?: number): Promise<T[]> {
+    let query = this.url + `?${this.keyword}=${keyword}`;
+    if (max && max > 0) {
+      query += `&${this.max}=${max}`;
+    }
+    return this.http.get<T[]>(query).catch(err => {
+      const data = (err && err.response) ? err.response : err;
+      if (data && (data.status === 404 || data.status === 410)) {
+        return [];
+      }
+      throw err;
+    });
   }
 }
