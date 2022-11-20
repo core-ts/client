@@ -757,7 +757,7 @@ export class DiffApprClient<T, ID> extends DiffClient<T, ID> {
   }
 }
 // tslint:disable-next-line:max-classes-per-file
-export class ViewSearchClient<T, ID, S extends Filter> extends SearchWebClient<T, S> {
+export class SearchClient<T, ID, S extends Filter> extends SearchWebClient<T, S> {
   constructor(http: HttpRequest, serviceUrl: string, model?: Attributes | string[], config?: SearchConfig, ignoreDate?: boolean, searchGet?: boolean, metamodel?: MetaModel) {
     super(http, serviceUrl, model, metamodel, config, ignoreDate, searchGet);
     this.viewWebClient = new ViewClient<T, ID>(http, serviceUrl, model, ignoreDate, this._metamodel);
@@ -783,7 +783,8 @@ export class ViewSearchClient<T, ID, S extends Filter> extends SearchWebClient<T
     return this.viewWebClient.load(id, ctx);
   }
 }
-export const SearchClient = ViewSearchClient;
+export const ViewSearchClient = SearchClient;
+export const Query = SearchClient;
 // tslint:disable-next-line:max-classes-per-file
 export class GenericSearchClient<T, ID, R, S extends Filter> extends SearchWebClient<T, S> {
   constructor(http: HttpRequest, serviceUrl: string, model?: Attributes | string[], config?: SearchConfig & EditStatusConfig, ignoreDate?: boolean, searchGet?: boolean, metamodel?: MetaModel) {
@@ -833,7 +834,7 @@ export class Client<T, ID, F extends Filter> extends GenericSearchClient<T, ID, 
   }
 }
 // tslint:disable-next-line:max-classes-per-file
-export class ViewSearchDiffApprClient<T, ID, S extends Filter> extends ViewSearchClient<T, ID, S> {
+export class ViewSearchDiffApprClient<T, ID, S extends Filter> extends SearchClient<T, ID, S> {
   constructor(http: HttpRequest, serviceUrl: string, model?: Attributes | string[], config?: SearchConfig & DiffStatusConfig, ignoreDate?: boolean, searchGet?: boolean, metamodel?: MetaModel) {
     super(http, serviceUrl, model, config, ignoreDate, searchGet, metamodel);
     this.diffWebClient = new DiffApprClient(http, serviceUrl, model, config, ignoreDate, this._metamodel);
@@ -898,6 +899,158 @@ export class QueryClient<T> {
         return [];
       }
       throw err;
+    });
+  }
+}
+
+export interface BaseRate {
+  author: string;
+  authorURL?: string;
+  rate: number;
+}
+export interface Rate extends BaseRate {
+  id: string;
+  time: Date;
+  review: string;
+  usefulCount: number;
+  replyCount: number;
+  histories?: ShortRate[];
+  rate: number;
+
+  imageURL?:string;
+}
+export interface ShortRate {
+  rate: number;
+  time: Date;
+  review: string;
+}
+export interface Filter {
+  page?: number;
+  limit?: number;
+  firstLimit?: number;
+  fields?: string[];
+  sort?: string;
+  currentUserId?: string;
+
+  q?: string;
+  keyword?: string;
+  excluding?: string[]|number[];
+  refId?: string|number;
+
+  pageIndex?: number;
+  pageSize?: number;
+}
+export interface RateFilter extends Filter {
+  rateId?: string;
+  id?: string;
+  author?: string;
+  rate?: number;
+  time?: Date;
+  review?: string;
+  usefulCount?: number;
+  replyCount?: number;
+  userId?: string;
+}
+export class RatesClient extends SearchWebClient<Rate, RateFilter> {
+  constructor(protected http: HttpRequest, protected serviceUrl: string, sg?: boolean, protected po?: boolean) {
+    super(http, serviceUrl);
+    this.searchGet = sg;
+    this.search = this.search.bind(this);
+  }
+  postOnly(s: RateFilter): boolean {
+    return (this.po ? this.po : false);
+  }
+  search(s: RateFilter, limit?: number, offset?: number | string, fields?: string[]): Promise<SearchResult<Rate>> {
+    return super.search(s, limit, offset, fields).then(r => {
+      formatTime(r.list);
+      return r;
+    });
+  }
+}
+export interface STime {
+  time?: Date;
+}
+export interface TimeObject<T extends STime> {
+  time?: Date;
+  histories?: T[];
+}
+export function formatTime<T extends STime, K extends TimeObject<T>>(l: K[]) {
+  if (l && l.length > 0) {
+    for (let i = 0; i < l.length; i++) {
+      const c = l[i];
+      const h = c.histories;
+      if (h && h.length > 0) {
+        for (let j = 0; j < h.length; j++) {
+          const s = h[j];
+          if (s.time) {
+            s.time = new Date(s.time);
+          }
+        }
+      }
+      if (c.time) {
+        c.time = new Date(c.time);
+      }
+    }
+  }
+}
+export interface SComment {
+  userURL?: string;
+  comment?: string;
+  time?: Date;
+  parent?: string;
+  replyCount?: number;
+  usefulCount?: number;
+  authorName?: string;
+}
+interface ShortComment {
+  comment: string;
+  time: Date;
+}
+export interface Comment {
+  commentId?: string;
+  id?: string;
+  author?: string;
+  userId?: string;
+  userURL?: string;
+  comment?: string;
+  time?: Date;
+  updatedAt?: Date;
+  histories?: ShortComment[];
+  parent?: string;
+  replyCount?: number;
+  usefulCount?: number;
+  authorName?: string;
+}
+
+export interface CommentFilter {
+  commentId?: string;
+  id?: string;
+  author?: string;
+  authorURL?: string;
+  userId?: string;
+  comment?: string;
+  time?: Date;
+  firstLimit?: number;
+  fields?: string[];
+  sort?: string;
+  limit?: number;
+}
+export interface CommentsService {
+  search(s: CommentFilter, limit?: number, offset?: number | string, fields?: string[]): Promise<SearchResult<Comment>>;
+}
+export class CommentsClient extends SearchWebClient<Comment, CommentFilter> {
+  constructor(protected http: HttpRequest, protected serviceUrl: string, sg?: boolean, protected po?: boolean) {
+    super(http, serviceUrl);
+    this.searchGet = sg;
+    this.search = this.search.bind(this);
+  }
+  postOnly(s: CommentFilter): boolean {
+    return (this.po ? this.po : false);
+  }
+  search(s: CommentFilter, limit?: number, offset?: number | string, fields?: string[]): Promise<SearchResult<Comment>> {
+    return super.search(s, limit, offset, fields).then(r => {
+      formatTime(r.list);
+      return r;
     });
   }
 }

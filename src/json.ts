@@ -58,6 +58,7 @@ export interface MetaModel {
   attributeName?: string;
   keys: string[];
   dateFields?: string[];
+  numberFields?: string[];
   objectFields?: MetaModel[];
   arrayFields?: MetaModel[];
 }
@@ -70,6 +71,7 @@ export function build(attributes: Attributes, ignoreDate?: boolean): MetaModel {
   */
   const primaryKeys: string[] = new Array<string>();
   const dateFields = new Array<string>();
+  const numberFields = new Array<string>();
   const objectFields = new Array<MetaModel>();
   const arrayFields = new Array<MetaModel>();
   const ids: string[] = Object.keys(attributes);
@@ -92,6 +94,11 @@ export function build(attributes: Attributes, ignoreDate?: boolean): MetaModel {
           if (ignoreDate) {
             dateFields.push(attr.name);
           }
+          break;
+        }
+        case 'number':
+        case 'integer': {
+          numberFields.push(attr.name);
           break;
         }
         case 'object': {
@@ -122,6 +129,9 @@ export function build(attributes: Attributes, ignoreDate?: boolean): MetaModel {
   if (dateFields.length > 0) {
     metadata.dateFields = dateFields;
   }
+  if (numberFields.length > 0) {
+    metadata.numberFields = numberFields;
+  }
   if (objectFields.length > 0) {
     metadata.objectFields = objectFields;
   }
@@ -149,7 +159,7 @@ export function buildKeys(attributes: Attributes): string[] {
 const _datereg = '/Date(';
 const _re = /-?\d+/;
 
-function jsonToDate(obj: any, fields?: string[]) {
+export function jsonToDate(obj: any, fields?: string[]) {
   if (!obj || !fields) {
     return obj;
   }
@@ -162,7 +172,19 @@ function jsonToDate(obj: any, fields?: string[]) {
     }
   }
 }
-
+export function jsonToNumber(obj: any, fields?: string[]) {
+  if (!obj || !fields) {
+    return obj;
+  }
+  if (!Array.isArray(obj)) {
+    for (const field of fields) {
+      const v = obj[field];
+      if (typeof v === 'string' && !isNaN(v as any)) {
+        obj[field] = parseFloat(v);
+      }
+    }
+  }
+}
 function toDate(v: any): Date | null | undefined {
   if (!v) {
     return null;
@@ -196,6 +218,7 @@ export function json(obj: any, meta?: MetaModel): any {
     return obj;
   }
   jsonToDate(obj, meta.dateFields);
+  jsonToNumber(obj, meta.numberFields);
   if (meta.objectFields) {
     for (const of of meta.objectFields) {
       if (of.attributeName && obj[of.attributeName]) {
