@@ -1054,3 +1054,21 @@ export class CommentsClient extends SearchWebClient<Comment, CommentFilter> {
     });
   }
 }
+export interface Module {
+  id: string;
+  name: string;
+  resource?: string;
+  path?: string;
+  icon?: string;
+  actions?: number;
+  sequence?: number;
+  children?: Module[];
+}
+export interface ModuleService {
+  all(): Promise<Module[]>;
+}
+export class ModuleClient implements ModuleService {
+  constructor(public http: HttpRequest, public url: string) {
+  }
+  all = (): Promise<Module[]> => this.http.get(this.url);
+}
