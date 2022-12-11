@@ -1020,8 +1020,8 @@ export interface Comment {
   replyCount?: number;
   usefulCount?: number;
   authorName?: string;
+  disable?:boolean;
 }
-
 export interface CommentFilter {
   commentId?: string;
   id?: string;
