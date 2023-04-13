@@ -916,13 +916,15 @@ export interface Rate extends BaseRate {
   replyCount: number;
   histories?: ShortRate[];
   rate: number;
-
-  imageURL?:string;
+  anonymous?: boolean;
+  imageURL?: string;
+  authorName?: string;
 }
 export interface ShortRate {
   rate: number;
   time: Date;
   review: string;
+  anonymous?: boolean
 }
 export interface Filter {
   page?: number;
@@ -934,8 +936,8 @@ export interface Filter {
 
   q?: string;
   keyword?: string;
-  excluding?: string[]|number[];
-  refId?: string|number;
+  excluding?: string[] | number[];
+  refId?: string | number;
 
   pageIndex?: number;
   pageSize?: number;
@@ -1020,7 +1022,6 @@ export interface Comment {
   replyCount?: number;
   usefulCount?: number;
   authorName?: string;
-  disable?:boolean;
 }
 export interface CommentFilter {
   commentId?: string;
