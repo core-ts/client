@@ -25,7 +25,7 @@ export interface ResultInfo<T> {
   value?: T;
   message?: string;
 }
-export type Result<T> = number | ResultInfo<T>;
+export type Result<T> = number | ResultInfo<T> | ErrorMessage[];
 
 export function param(obj: any, fields?: string, excluding?: string): string {
   const ks = Object.keys(obj);
@@ -260,7 +260,7 @@ export class ViewClient<T, ID> {
     }).catch(err => {
       const data = (err && err.response) ? err.response : err;
       if (data && (data.status === 404 || data.status === 410)) {
-        return null;
+        return Promise.resolve(null);
       }
       throw err;
     });
@@ -305,13 +305,15 @@ export class CRUDClient<T, ID, R> extends ViewClient<T, ID> {
           if (t.status && t.status.not_found) {
             x = t.status.not_found;
           }
-          return x;
+          return Promise.resolve(x);
         } else if (data.status === 409) {
-          let x: any = -1;
+          let x: any = 2;
           if (t.status && t.status.version_error) {
             x = t.status.version_error;
           }
-          return x;
+          return Promise.resolve(x);
+        } else if (data.status === 422) {
+          return Promise.resolve(data.data);
         }
       }
       throw err;
@@ -340,13 +342,15 @@ export class CRUDClient<T, ID, R> extends ViewClient<T, ID> {
           if (t.status && t.status.not_found) {
             x = t.status.not_found;
           }
-          return x;
+          return Promise.resolve(x);
         } else if (data.status === 409) {
-          let x: any = -1;
+          let x: any = 2;
           if (t.status && t.status.version_error) {
             x = t.status.version_error;
           }
-          return x;
+          return Promise.resolve(x);
+        } else if (data.status === 422) {
+          return Promise.resolve(data.data);
         }
       }
       throw err;
@@ -370,18 +374,20 @@ export class CRUDClient<T, ID, R> extends ViewClient<T, ID> {
     }).catch(err => {
       if (err) {
         const data = (err && err.response) ? err.response : err;
-        if (data.status === 404 || data.status === 410) {
-          let x: any = 0;
-          if (t.status && t.status.not_found) {
-            x = t.status.not_found;
+        if (data?.status === 404 || data.status === 410) {
+          let statusCode: any = 0;
+          if (t?.status && t.status?.not_found) {
+            statusCode = t.status.not_found;
           }
-          return x;
+          return Promise.resolve(statusCode);
         } else if (data.status === 409) {
-          let x: any = -1;
+          let statusCode: any = 2;
           if (t.status && t.status.version_error) {
-            x = t.status.version_error;
+            statusCode = t.status.version_error;
           }
-          return x;
+          return Promise.resolve(statusCode);
+        } else if (data.status === 422) {
+          return Promise.resolve(data.data);
         }
       }
       throw err;
@@ -404,9 +410,11 @@ export class CRUDClient<T, ID, R> extends ViewClient<T, ID> {
       if (err) {
         const data = (err && err.response) ? err.response : err;
         if (data && (data.status === 404 || data.status === 410)) {
-          return 0;
+          return Promise.resolve(0);
         } else if (data.status === 409) {
-          return -1;
+          return Promise.resolve(2);
+        } else if (data.status === 410) {
+          return Promise.resolve(data.data);
         }
       }
       throw err;
@@ -640,7 +648,7 @@ export class DiffClient<T, ID>  {
     }).catch(err => {
       const data = (err && err.response) ? err.response : err;
       if (data && (data.status === 404 || data.status === 410)) {
-        return null;
+        return Promise.resolve(null);
       } else {
         throw err;
       }
@@ -698,13 +706,13 @@ export class ApprClient<ID> {
       if (err) {
         const data = (err && err.response) ? err.response : err;
         if (data.status === 404 || data.status === 410) {
-          return (t.diffStatus.not_found ? t.diffStatus.not_found : 0);
+          return Promise.resolve(t.diffStatus?.not_found ? t.diffStatus.not_found : 0);
         } else if (data.status === 409) {
-          return (t.diffStatus.version_error ? t.diffStatus.version_error : 2);
+          return Promise.resolve(t.diffStatus?.version_error ? t.diffStatus.version_error : 2);
         }
       }
       if (t.diffStatus.error) {
-        return t.diffStatus.error;
+        return Promise.resolve(t.diffStatus.error);
       } else {
         throw err;
       }
@@ -727,13 +735,13 @@ export class ApprClient<ID> {
       if (err) {
         const data = (err && err.response) ? err.response : err;
         if (data.status === 404 || data.status === 410) {
-          return (t.diffStatus.not_found ? t.diffStatus.not_found : 0);
+          return Promise.resolve(t.diffStatus.not_found ? t.diffStatus.not_found : 0);
         } else if (data.status === 409) {
-          return (t.diffStatus.version_error ? t.diffStatus.version_error : 2);
+          return Promise.resolve(t.diffStatus.version_error ? t.diffStatus.version_error : 2);
         }
       }
       if (t.diffStatus.error) {
-        return t.diffStatus.error;
+        return Promise.resolve(t.diffStatus.error);
       } else {
         throw err;
       }
@@ -884,7 +892,7 @@ export class QueryClient<T> {
   keyword: string;
   max: string;
   constructor(public http: HttpRequest, public url: string, keyword?: string, max?: string) {
-    this.keyword = (keyword && keyword.length > 0 ? keyword : 'keyword');
+    this.keyword = (keyword && keyword.length > 0 ? keyword : 'q');
     this.max = (max && max.length > 0 ? max : 'max');
     this.query = this.query.bind(this);
   }
@@ -896,7 +904,7 @@ export class QueryClient<T> {
     return this.http.get<T[]>(query).catch(err => {
       const data = (err && err.response) ? err.response : err;
       if (data && (data.status === 404 || data.status === 410)) {
-        return [];
+        return Promise.resolve([]);
       }
       throw err;
     });
@@ -937,6 +945,7 @@ export interface Filter {
   q?: string;
   keyword?: string;
   excluding?: string[] | number[];
+  next?: string | number;
   refId?: string | number;
 
   pageIndex?: number;
@@ -1022,6 +1031,7 @@ export interface Comment {
   replyCount?: number;
   usefulCount?: number;
   authorName?: string;
+  disable?:boolean;
 }
 export interface CommentFilter {
   commentId?: string;
