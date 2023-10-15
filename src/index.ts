@@ -25,7 +25,7 @@ export interface ResultInfo<T> {
   value?: T;
   message?: string;
 }
-export type Result<T> = number | ResultInfo<T> | ErrorMessage[];
+export type Result<T> = number | T | ErrorMessage[];
 
 export function param(obj: any, fields?: string, excluding?: string): string {
   const ks = Object.keys(obj);
@@ -281,8 +281,8 @@ export class CRUDClient<T, ID, R> extends ViewClient<T, ID> {
   }
 
   protected formatResultInfo(result: any, ctx?: any): any {
-    if (this._metamodel && result && typeof result === 'object' && result.status === 1 && result.value && typeof result.value === 'object') {
-      result.value = json(result.value, this._metamodel);
+    if (this._metamodel && result && typeof result === 'object') {
+      result = json(result, this._metamodel);
     }
     return result;
   }
@@ -307,7 +307,7 @@ export class CRUDClient<T, ID, R> extends ViewClient<T, ID> {
           }
           return Promise.resolve(x);
         } else if (data.status === 409) {
-          let x: any = 2;
+          let x: any = -1;
           if (t.status && t.status.version_error) {
             x = t.status.version_error;
           }
@@ -344,7 +344,7 @@ export class CRUDClient<T, ID, R> extends ViewClient<T, ID> {
           }
           return Promise.resolve(x);
         } else if (data.status === 409) {
-          let x: any = 2;
+          let x: any = -1;
           if (t.status && t.status.version_error) {
             x = t.status.version_error;
           }
@@ -381,7 +381,7 @@ export class CRUDClient<T, ID, R> extends ViewClient<T, ID> {
           }
           return Promise.resolve(statusCode);
         } else if (data.status === 409) {
-          let statusCode: any = 2;
+          let statusCode: any = -1;
           if (t.status && t.status.version_error) {
             statusCode = t.status.version_error;
           }
@@ -708,7 +708,7 @@ export class ApprClient<ID> {
         if (data.status === 404 || data.status === 410) {
           return Promise.resolve(t.diffStatus?.not_found ? t.diffStatus.not_found : 0);
         } else if (data.status === 409) {
-          return Promise.resolve(t.diffStatus?.version_error ? t.diffStatus.version_error : 2);
+          return Promise.resolve(t.diffStatus?.version_error ? t.diffStatus.version_error : -1);
         }
       }
       if (t.diffStatus.error) {
@@ -737,7 +737,7 @@ export class ApprClient<ID> {
         if (data.status === 404 || data.status === 410) {
           return Promise.resolve(t.diffStatus.not_found ? t.diffStatus.not_found : 0);
         } else if (data.status === 409) {
-          return Promise.resolve(t.diffStatus.version_error ? t.diffStatus.version_error : 2);
+          return Promise.resolve(t.diffStatus.version_error ? t.diffStatus.version_error : -1);
         }
       }
       if (t.diffStatus.error) {
