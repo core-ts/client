@@ -10,7 +10,7 @@ export interface Filter {
 export interface SearchResult<T> {
   total?: number;
   list: T[];
-  nextPageToken?: string;
+  next?: string;
   last?: boolean;
 }
 export interface ErrorMessage {
@@ -189,7 +189,7 @@ export function fromCsv<T>(m: Filter, csv: string, sfields?: string): Promise<Se
       // last: (items[0][0] === '1')
     };
     if (items[0].length > 1 && items[0][1].length > 0) {
-      x.nextPageToken = items[0][1];
+      x.next = items[0][1];
     }
     return x;
   });
@@ -486,7 +486,7 @@ export class SearchWebClient<T, S extends Filter> {
     (s as any)[sl] = limit;
     if (limit && offset) {
       if (typeof offset === 'string') {
-        const sn = (c && c.nextPageToken && c.nextPageToken.length > 0 ? c.nextPageToken : 'nextPageToken');
+        const sn = (c && c.next && c.next.length > 0 ? c.next : 'next');
         (s as any)[sn] = offset;
       } else {
         if (offset >= limit) {

@@ -12,7 +12,7 @@ export interface SearchConfig {
   request?: string;
   fields?: string;
   excluding?: string;
-  nextPageToken?: string;
+  next?: string;
 }
 export interface EditStatusConfig {
   duplicate_key?: number|string;
