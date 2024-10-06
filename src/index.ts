@@ -271,7 +271,7 @@ export class CRUDClient<T, ID, R> extends ViewClient<T, ID> {
   constructor(http: HttpRequest, serviceUrl: string, pmodel?: Attributes | string[], public status?: EditStatusConfig, ignoreDate?: boolean, metamodel?: MetaModel) {
     super(http, serviceUrl, pmodel, ignoreDate, metamodel);
     this.formatResultInfo = this.formatResultInfo.bind(this);
-    this.insert = this.insert.bind(this);
+    this.create = this.create.bind(this);
     this.update = this.update.bind(this);
     this.patch = this.patch.bind(this);
     this.delete = this.delete.bind(this);
@@ -287,7 +287,7 @@ export class CRUDClient<T, ID, R> extends ViewClient<T, ID> {
     return result;
   }
 
-  insert(obj: T, ctx?: any): Promise<R> {
+  create(obj: T, ctx?: any): Promise<R> {
     const t = this;
     if (t._metamodel) {
       json(obj, t._metamodel);
@@ -802,7 +802,7 @@ export class GenericSearchClient<T, ID, R, S extends Filter> extends SearchWebCl
     this.keys = this.keys.bind(this);
     this.all = this.all.bind(this);
     this.load = this.load.bind(this);
-    this.insert = this.insert.bind(this);
+    this.create = this.create.bind(this);
     this.update = this.update.bind(this);
     this.patch = this.patch.bind(this);
     this.delete = this.delete.bind(this);
@@ -822,8 +822,8 @@ export class GenericSearchClient<T, ID, R, S extends Filter> extends SearchWebCl
     return this.genericWebClient.load(id, ctx);
   }
 
-  insert(obj: T, ctx?: any): Promise<R> {
-    return this.genericWebClient.insert(obj, ctx);
+  create(obj: T, ctx?: any): Promise<R> {
+    return this.genericWebClient.create(obj, ctx);
   }
   update(obj: T, ctx?: any): Promise<R> {
     return this.genericWebClient.update(obj, ctx);
