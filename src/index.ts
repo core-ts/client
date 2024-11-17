@@ -466,7 +466,7 @@ export class SearchWebClient<T, S extends Filter> {
   keys(): string[] {
     return this._keys;
   }
-  search(s: S, limit?: number, offset?: number | string, fields?: string[]): Promise<SearchResult<T>> {
+  search(s: S, limit?: number, page?: number | string, fields?: string[]): Promise<SearchResult<T>> {
     const t = this;
     t.formatSearch(s);
     const c = t.config;
@@ -484,15 +484,12 @@ export class SearchWebClient<T, S extends Filter> {
     const sl = (c && c.limit && c.limit.length > 0 ? c.limit : 'limit');
     const sp = (c && c.page && c.page.length > 0 ? c.page : 'page');
     (s as any)[sl] = limit;
-    if (limit && offset) {
-      if (typeof offset === 'string') {
+    if (limit && page) {
+      if (typeof page === 'string') {
         const sn = (c && c.next && c.next.length > 0 ? c.next : 'next');
-        (s as any)[sn] = offset;
+        (s as any)[sn] = page;
       } else {
-        if (offset >= limit) {
-          const page = offset / limit + 1;
-          (s as any)[sp] = page;
-        }
+        (s as any)[sp] = page;
       }
     }
     const sfl = (c ? c.firstLimit : undefined);
