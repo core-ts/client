@@ -412,9 +412,7 @@ export class CRUDClient<T, ID, R> extends ViewClient<T, ID> {
         if (data && (data.status === 404 || data.status === 410)) {
           return Promise.resolve(0);
         } else if (data.status === 409) {
-          return Promise.resolve(2);
-        } else if (data.status === 410) {
-          return Promise.resolve(data.data);
+          return Promise.resolve(-1);
         }
       }
       throw err;
